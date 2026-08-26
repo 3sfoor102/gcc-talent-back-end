@@ -1,0 +1,1 @@
+const authService = require('./auth.service')
