@@ -13,16 +13,9 @@ const morgan = require('morgan')
 
 const PORT = process.env.PORT ? process.env.PORT : "5000"
 
-
-
-
-
-
-
 mongoose.connect(process.env.MONGODB_URI)
 
-mongoose.connection.on('connected', function ()
-{
+mongoose.connection.on('connected', function () {
     console.log(`Connected to MongoDB ${mongoose.connection.name}. ✔️✔️✔️`)
 })
 
@@ -31,13 +24,14 @@ app.use(express.json())
 app.use(morgan('dev'))
 
 
+app.get('/', function (req, res) {
+    res.send('GCC Talent API is running!')
+})
+
+app.post('/auth/register', authCtrl.register)
+app.post('/auth/login', authCtrl.login)
 
 
-
-
-
-
-app.listen(PORT, function ()
-{
+app.listen(PORT, function () {
     console.log(`The express app is ready on port ${PORT}! ✨✨✨`)
 })
