@@ -1,1 +1,31 @@
 const profileService = require('./profile.service')
+
+
+const createFreelancer = async function (req, res) 
+{
+    try {
+        const userId = req.user.id
+
+        const profileData = req.body
+
+        const profile = await profileService.createFreelancerProfile(userId, profileData)
+
+        res.status(201).json({
+            success: true,
+            data: {
+                profile
+            }
+        })
+    }
+    catch (err) {
+        res.status(400).json({
+            success: false,
+            error: { message: err.message }
+        })
+    }
+}
+
+
+module.exports = {
+    createFreelancer
+}
