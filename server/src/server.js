@@ -3,6 +3,7 @@ dns.setServers(["8.8.8.8", "1.1.1.1"])
 
 const verifyToken = require('./middleware/verify-token')
 const authCtrl = require('./modules/auth/auth.controller')
+const profileCtrl = require('./modules/profile/profile.controller')
 
 require('dotenv').config()
 const express = require('express')
