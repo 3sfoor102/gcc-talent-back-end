@@ -92,7 +92,7 @@ const updateJob = async (req, res) => {
 
 
         if (!foundJob.client.equals(req.user._id)) {
-            return res.status(403).send("Only the owner can edit this vehicle!");
+            return res.status(403).send("Only the owner can edit this Job!");
         }
 
 
@@ -117,7 +117,7 @@ const deleteJob = async (req, res) => {
         }
 
         if (!foundJob.client.equals(req.user._id)) {
-            return res.status(403).send("Only the owner can edit this vehicle!");
+            return res.status(403).send("Only the owner can edit this Job!");
         }
 
         const deletedJob = await Job.findByIdAndDelete(req.params.jobId)
@@ -128,6 +128,32 @@ const deleteJob = async (req, res) => {
     }
 }
 
+const changeStatus = async (req, res) => {
+    try {
+        const foundJob = await Job.findById(req.params.jobId)
+
+        if (!foundJob) {
+            return res.status(404).json({ err: "Job not found" });
+        }
+
+
+        if (!foundJob.client.equals(req.user._id)) {
+            return res.status(403).send("Only the owner can edit this Job!");
+        }
+
+        const updateStatus = { status: req.body.status }
+
+        const updatedJob = await Job.findByIdAndUpdate(req.params.jobId, updateStatus , { returnDocument: 'after' })
+
+
+        res.status(200).json(updateJob)
+
+
+    } catch (err) {
+        res.status(500).json({ err: err.message });
+
+    }
+}
 
 module.exports = {
     indexJob,
