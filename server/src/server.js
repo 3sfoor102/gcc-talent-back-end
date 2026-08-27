@@ -30,6 +30,7 @@ app.get('/', function (req, res) {
 
 app.post('/auth/register', authCtrl.register)
 app.post('/auth/login', authCtrl.login)
+app.get('/auth/verify', verifyToken, authCtrl.verify)
 
 
 app.listen(PORT, function () {
