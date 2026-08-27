@@ -50,7 +50,31 @@ const createJob = async (req, res) => {
     }
 }
 
-const updateJob = async (req, res) => { }
+const updateJob = async (req, res) => {
+    try {
+        const foundJob = await Job.findById(req.params.jobId)
+
+        if (!foundJob) {
+            return res.status(404).json({ err: "Job not found" });
+        }
+
+
+        if (!foundJob.client.equals(req.user._id)) {
+            return res.status(403).send("Only the owner can edit this vehicle!");
+        }
+
+
+        const updatedJob = await Job.findByIdAndUpdate(req.params.jobId, req.body, { returnDocument: 'after' })
+
+
+        res.status(200).json(updateJob)
+
+
+    } catch (err) {
+        res.status(500).json({ err: err.message });
+
+    }
+}
 
 const deleteJob = async (req, res) => { }
 
