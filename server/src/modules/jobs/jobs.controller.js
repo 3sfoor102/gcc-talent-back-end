@@ -50,6 +50,21 @@ const createJob = async (req, res) => {
     }
 }
 
+const showJob = async (req, res) => {
+    try {
+
+        const foundjob = await Job.findById(req.params.jobId)
+
+        if (!foundjob) {
+            return res.status(404).json({ err: "Job not found" });
+        }
+        res.status(200).json(foundjob);
+
+    } catch (err) {
+        res.status(500).json({ err: err.message });
+    }
+}
+
 const updateJob = async (req, res) => {
     try {
         const foundJob = await Job.findById(req.params.jobId)
@@ -99,6 +114,7 @@ const deleteJob = async (req, res) => {
 
 module.exports = {
     indexJob,
+    showJob,
     createJob,
     updateJob,
     deleteJob
