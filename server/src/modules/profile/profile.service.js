@@ -34,7 +34,22 @@ const createClientProfile = async function (userId, profileData)
     return profile
 }
 
+
+const getFreelancerProfile = async function (userId) 
+{
+    const profile = await FreelancerProfile.findOne({ user: userId })
+
+    if (!profile) {
+        throw new Error('Freelancer profile not found')
+    }
+
+    return profile
+}
+
+
+
 module.exports = {
     createFreelancerProfile,
-    createClientProfile
+    createClientProfile,
+    getFreelancerProfile
 }
