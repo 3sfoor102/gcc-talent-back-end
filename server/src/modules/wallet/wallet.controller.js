@@ -1,16 +1,23 @@
 const express = require("express")
-const Transaction = require("server/src/models/Transaction.js")
 
-const deposit = async (req, res) => {
-     try {
-        req.body.user._id = req.user._id
-        const TransactionData = await Transaction.findById(req.params.transactionId)
-        amount = req.body.amount
-        meta = req.body.meta
+const walletService = require('../services/wallet.service.js');
 
+const deposit = async (req, res, next) => {
+    try {
+        const userId = req.user._id; 
         
-     } catch (error) {
-        res.status(401).json({You })
-     }
+        const { amount, card } = req.body;
 
-}
+        const result = await walletService.processDeposit(userId, amount, card);
+
+        res.status(200).json({
+            success: true,
+            data: result
+        });
+        
+    } catch (error) {
+        next(error);
+    }
+};
+
+module.exports = { deposit };
