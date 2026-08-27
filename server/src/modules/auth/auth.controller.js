@@ -62,7 +62,27 @@ const login = async function (req, res)
     }
 }
 
+const verify = async function (req, res)
+{
+    try {
+        res.status(200).json({
+            success: true,
+            data: {
+                user: req.user 
+            }
+        })
+    }
+    catch (err)
+    {
+        res.status(401).json({
+            success: false,
+            error: { message: err.message }
+        })
+    }
+}
+
 module.exports = {
     register,
-    login
+    login,
+    verify
 }
