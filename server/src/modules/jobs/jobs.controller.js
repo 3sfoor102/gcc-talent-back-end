@@ -14,6 +14,38 @@ const indexJob = async (req, res) => {
     }
 }
 
+const showJob = async (req, res) => {
+    try {
+
+        const foundjob = await Job.findById(req.params.jobId)
+
+        if (!foundjob) {
+            return res.status(404).json({ err: "Job not found" });
+        }
+        res.status(200).json(foundjob);
+
+    } catch (err) {
+        res.status(500).json({ err: err.message });
+    }
+}
+
+const clientJobs = async (req, res) => {
+    try {
+
+        const foundJobs = await Job.find({ client: req.user._id })
+
+        if (!foundJobs) {
+            return res.status(404).json({ err: "No jobs were found" });
+        }
+
+
+        res.status(200).json(foundJobs);
+
+    } catch (err) {
+        res.status(500).json({ err: err.message });
+    }
+}
+
 const createJob = async (req, res) => {
     try {
 
@@ -47,21 +79,6 @@ const createJob = async (req, res) => {
     } catch (err) {
         res.status(500).json({ err: err.message });
 
-    }
-}
-
-const showJob = async (req, res) => {
-    try {
-
-        const foundjob = await Job.findById(req.params.jobId)
-
-        if (!foundjob) {
-            return res.status(404).json({ err: "Job not found" });
-        }
-        res.status(200).json(foundjob);
-
-    } catch (err) {
-        res.status(500).json({ err: err.message });
     }
 }
 
