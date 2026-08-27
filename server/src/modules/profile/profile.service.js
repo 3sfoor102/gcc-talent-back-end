@@ -19,6 +19,22 @@ const createFreelancerProfile = async function (userId, profileData)
 }
 
 
+
+const createClientProfile = async function (userId, profileData) 
+{
+    const existingProfile = await ClientProfile.findOne({ user: userId })
+
+    if (existingProfile) 
+    {
+        throw new Error('Client profile already exists')
+    }
+
+    const profile = await ClientProfile.create({ user: userId, ...profileData })
+
+    return profile
+}
+
 module.exports = {
-    createFreelancerProfile
+    createFreelancerProfile,
+    createClientProfile
 }
