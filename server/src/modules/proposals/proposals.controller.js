@@ -7,19 +7,23 @@ const createProposal = async (req, res) => {
         const foundJob = await Job.findById(req.params.jobId)
 
         if (!foundJob || foundJob.status !== 'open') {
-            // return error
+            return res.status(404).json({ err: 'Job not found or is not open for proposals' })
+        }
+
+        if (foundJob.client === req.user._id) {
+            return res.status(403).json({ err: 'You cannot apply to your own job.' })
         }
 
         const foundFreelancer = await FreelancerProfile.findOne({ user: req.user._id })
 
         if (!foundFreelancer) {
-            // return error
+            return res.status(404).json({ err: 'Freelancer profile not found.' })
         }
 
         const appliedBefore = await Proposal.findOne({ job: req.params.jobId, freelancer: req.user._id })
 
         if (appliedBefore) {
-            // return error, already applied
+            return res.status(409).json({ err: 'You have already submitted a proposal for this job.' })
         }
 
         let proposalDetails = {
@@ -28,14 +32,13 @@ const createProposal = async (req, res) => {
             coverLetter: req.body.coverLetter,
             amount: req.body.amount,
             deliveryDays: req.body.deliveryDays,
-            milestones: [],
-            attachments: [],
+            milestones: req.body.milestones || [],
+            attachments: [], //would need to check about using cloudinary to upload the files
+            status: 'pending'
         }
 
-        // proposalDetails.milestones  need to push the milestones one by one into an array
-        // proposalDetails.attachments  need to push the milestones one by one into an array
-
         const newProposal = await Proposal.create(proposalDetails)
+
         foundJob.proposalsCount += 1
         foundJob.save()
 
