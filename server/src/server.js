@@ -32,6 +32,8 @@ app.get('/', function (req, res) {
 app.post('/auth/register', authCtrl.register)
 app.post('/auth/login', authCtrl.login)
 app.get('/auth/verify', verifyToken, authCtrl.verify)
+app.post('/profile/freelancer', verifyToken, profileCtrl.createFreelancer)
+app.post('/profile/client', verifyToken, profileCtrl.createClient)
 
 
 app.listen(PORT, function () {
