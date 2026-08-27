@@ -1,0 +1,1 @@
+const profileService = require('./profile.service')
