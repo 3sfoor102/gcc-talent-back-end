@@ -15,17 +15,20 @@ const jobSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+
     category: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Category',
         required: true,
         index: true
     },
+    
     skills: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Skill',
         index: true
     }],
+    
     budgetType: {
         type: String,
         enum: ['fixed', 'hourly'],
