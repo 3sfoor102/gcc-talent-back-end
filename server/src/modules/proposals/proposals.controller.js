@@ -49,6 +49,26 @@ const createProposal = async (req, res) => {
     }
 }
 
+const getProposals = async (req, res) => {
+    try {
+
+        const foundJob = await Job.findById(req.params.jobId)
+        if (!foundJob) {
+            return res.status(404).json({ err: 'Job not found' })
+        }
+        if (foundJob.client.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ err: 'You can only view proposals for your own jobs.' })
+        }
+
+        const foundProposals = await Proposal.find({ job: req.params.jobId }).populate('freelancer')
+
+        req.status(200).json(foundProposals)
+
+    } catch (err) {
+        res.status(500).json({ err: err.message });
+    }
+}
+
 
 
 module.exports = {
