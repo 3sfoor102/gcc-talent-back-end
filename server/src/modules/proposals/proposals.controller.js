@@ -10,7 +10,7 @@ const createProposal = async (req, res) => {
             return res.status(404).json({ err: 'Job not found or is not open for proposals' })
         }
 
-        if (foundJob.client === req.user._id) {
+        if (foundJob.client.toString() === req.user._id.toString()) {
             return res.status(403).json({ err: 'You cannot apply to your own job.' })
         }
 
