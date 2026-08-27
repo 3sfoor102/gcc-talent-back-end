@@ -49,7 +49,7 @@ const createProposal = async (req, res) => {
     }
 }
 
-const getProposals = async (req, res) => {
+const getJobProposals = async (req, res) => {
     try {
 
         const foundJob = await Job.findById(req.params.jobId)
@@ -69,8 +69,19 @@ const getProposals = async (req, res) => {
     }
 }
 
+const getMyProposals = async (req, res) => {
+    try {
+        const foundProposals = await Proposal.find({ freelancer: req.user._id }).populate('job').sort('-createdAt')
 
+        req.status(200).json(foundProposals)
+
+    } catch (err) {
+        res.status(500).json({ err: err.message });
+    }
+}
 
 module.exports = {
     createProposal,
+    getJobProposals,
+    getMyProposals
 }
