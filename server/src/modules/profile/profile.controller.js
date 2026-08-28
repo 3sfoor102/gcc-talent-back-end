@@ -101,6 +101,31 @@ const updateFreelancer = async function (req, res)
     }
 }
 
+
+
+const getClient = async function (req, res)
+{
+    try {
+        const userId = req.user.id
+        
+        const profile = await profileService.getClientProfile(userId)
+
+        res.status(200).json({
+            success: true,
+            data: {
+                profile
+            }
+        })
+    }
+    catch (err)
+    {
+        res.status(404).json({
+            success: false,
+            error: { message: err.message }
+        })
+    }
+}
+
 module.exports = {
     createFreelancer,
     createClient,
