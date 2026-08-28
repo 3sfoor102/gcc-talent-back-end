@@ -92,8 +92,15 @@ const updateProposal = async (req, res) => {
             return res.status(400).json({ err: 'This proposal is locked due to status change by client.' })
         }
 
-        const updatedProposal = await Proposal.findOneAndUpdate(req.params.proposalId, req.body, { returnDocument: 'after' })
+        // const updatedProposal = await Proposal.findOneAndUpdate(req.params.proposalId, req.body, { returnDocument: 'after' })
+        
+        if (req.body.coverLetter) proposalToEdit.coverLetter = req.body.coverLetter
+        if (req.body.amount) proposalToEdit.amount = req.body.amount
+        if (req.body.deliveryDays) proposalToEdit.deliveryDays = req.body.deliveryDays
+        if (req.body.milestones) proposalToEdit.milestones = req.body.milestones
+        if (req.body.attachments) proposalToEdit.attachments = req.body.attachments
 
+        const updatedProposal = await proposalToEdit.save()
         res.status(200).json(updatedProposal)
 
     } catch (err) {
