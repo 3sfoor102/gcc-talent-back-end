@@ -77,10 +77,29 @@ const getClientProfile = async function (userId)
 }
 
 
+
+const updateClientProfile = async function (userId, updateData)
+{
+    const profile = await ClientProfile.findOneAndUpdate(
+        { user: userId },
+        updateData,
+        { new: true, runValidators: true }
+    )
+
+    if (!profile)
+    {
+        throw new Error('Client profile not found')
+    }
+
+    return profile
+}
+
+
 module.exports = {
     createFreelancerProfile,
     createClientProfile,
     getFreelancerProfile,
     updateFreelancerProfile,
     getClientProfile,
+    updateClientProfile
 }
