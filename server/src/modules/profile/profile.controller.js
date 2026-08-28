@@ -107,7 +107,7 @@ const getClient = async function (req, res)
 {
     try {
         const userId = req.user.id
-        
+
         const profile = await profileService.getClientProfile(userId)
 
         res.status(200).json({
@@ -126,9 +126,38 @@ const getClient = async function (req, res)
     }
 }
 
+
+
+const updateClient = async function (req, res)
+{
+    try {
+        const userId = req.user.id
+
+        const updateData = req.body
+
+        const profile = await profileService.updateClientProfile(userId, updateData)
+
+        res.status(200).json({
+            success: true,
+            data: {
+                profile
+            }
+        })
+    }
+    catch (err)
+    {
+        res.status(400).json({
+            success: false,
+            error: { message: err.message }
+        })
+    }
+}
+
 module.exports = {
     createFreelancer,
     createClient,
     getFreelancer,
-    updateFreelancer
+    updateFreelancer,
+    getClient,
+    updateClient
 }
