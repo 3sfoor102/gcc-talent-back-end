@@ -1,6 +1,6 @@
 const authService = require('./auth.service')
 
-const register = async function (req, res)
+const register = async function (req, res, next)
 {
     try {
 
@@ -22,15 +22,13 @@ const register = async function (req, res)
         })
     } catch (err)
     {
-        res.status(400).json({
-            success: false,
-            error: { message: err.message }
-        })
+        res.status(400)
+        next(err)
     }
 }
 
 
-const login = async function (req, res)
+const login = async function (req, res, next)
 {
     try {
 
@@ -54,15 +52,12 @@ const login = async function (req, res)
     }
     catch (err)
     {
-        res.status(401).json(
-        {
-            success: false,
-            error: { message: err.message }
-        })
+        res.status(401)
+        next(err)
     }
 }
 
-const verify = async function (req, res)
+const verify = async function (req, res, next)
 {
     try {
         res.status(200).json({
@@ -74,10 +69,8 @@ const verify = async function (req, res)
     }
     catch (err)
     {
-        res.status(401).json({
-            success: false,
-            error: { message: err.message }
-        })
+        res.status(401)
+        next(err)
     }
 }
 
