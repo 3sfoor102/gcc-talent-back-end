@@ -1,7 +1,7 @@
 const profileService = require('./profile.service')
 
 
-const createFreelancer = async function (req, res) 
+const createFreelancer = async function (req, res, next) 
 {
     try {
         const userId = req.user.id
@@ -18,15 +18,13 @@ const createFreelancer = async function (req, res)
         })
     }
     catch (err) {
-        res.status(400).json({
-            success: false,
-            error: { message: err.message }
-        })
+        res.status(400)
+        next(err)
     }
 }
 
 
-const createClient = async function (req, res) 
+const createClient = async function (req, res, next) 
 {
     try {
         const userId = req.user.id
@@ -43,15 +41,13 @@ const createClient = async function (req, res)
         })
     }
     catch (err) {
-        res.status(400).json({
-            success: false,
-            error: { message: err.message }
-        })
+        res.status(400)
+        next(err)
     }
 }
 
 
-const getFreelancer = async function (req, res)
+const getFreelancer = async function (req, res, next)
 {
     try {
         const userId = req.user.id
@@ -67,16 +63,14 @@ const getFreelancer = async function (req, res)
     }
     catch (err)
     {
-        res.status(404).json({
-            success: false,
-            error: { message: err.message }
-        })
+        res.status(404)
+        next(err)
     }
 }
 
 
 
-const updateFreelancer = async function (req, res)
+const updateFreelancer = async function (req, res, next)
 {
     try {
         const userId = req.user.id
@@ -94,16 +88,14 @@ const updateFreelancer = async function (req, res)
     }
     catch (err)
     {
-        res.status(400).json({
-            success: false,
-            error: { message: err.message }
-        })
+        res.status(400)
+        next(err)
     }
 }
 
 
 
-const getClient = async function (req, res)
+const getClient = async function (req, res, next)
 {
     try {
         const userId = req.user.id
@@ -119,16 +111,14 @@ const getClient = async function (req, res)
     }
     catch (err)
     {
-        res.status(404).json({
-            success: false,
-            error: { message: err.message }
-        })
+        res.status(404)
+        next(err)
     }
 }
 
 
 
-const updateClient = async function (req, res)
+const updateClient = async function (req, res, next)
 {
     try {
         const userId = req.user.id
@@ -146,10 +136,8 @@ const updateClient = async function (req, res)
     }
     catch (err)
     {
-        res.status(400).json({
-            success: false,
-            error: { message: err.message }
-        })
+        res.status(400)
+        next(err)
     }
 }
 
