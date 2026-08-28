@@ -2,25 +2,7 @@ const Job = require('../../models/Job')
 const Proposal = require('../../models/Proposal')
 const FreelancerProfile = require('../../models/FreelancerProfile')
 
-const getJobProposals = async (req, res) => {
-    try {
-
-        const foundJob = await Job.findById(req.params.jobId)
-        if (!foundJob) {
-            return res.status(404).json({ err: 'Job not found' })
-        }
-        if (foundJob.client.toString() !== req.user._id.toString()) {
-            return res.status(403).json({ err: 'You can only view proposals for your own jobs.' })
-        }
-
-        const foundProposals = await Proposal.find({ job: req.params.jobId }).populate('freelancer')
-
-        req.status(200).json(foundProposals)
-
-    } catch (err) {
-        res.status(500).json({ err: err.message });
-    }
-}
+// Freelancer related functions
 
 const getMyProposals = async (req, res) => {
     try {
@@ -85,7 +67,7 @@ const updateProposal = async (req, res) => {
         const proposalToEdit = await Proposal.findById(req.params.proposalId)
 
         if (proposalToEdit.freelancer.toString() === req.user._id.toString()) {
-            return res.status(403).json({ err: 'You dont have access edit this proposal.' })
+            return res.status(403).json({ err: 'You dont have access to edit this proposal.' })
         }
 
         if (proposalToEdit.status !== 'pending') {
@@ -111,7 +93,7 @@ const withdrawProposal = async (req, res) => {
         const proposalToWithdraw = await Proposal.findById(req.params.proposalId)
 
         if (proposalToWithdraw.freelancer.toString() === req.user._id.toString()) {
-            return res.status(403).json({ err: 'You dont have access edit this proposal.' })
+            return res.status(403).json({ err: 'You dont have access to edit this proposal.' })
         }
 
         if (proposalToWithdraw.status !== 'pending') {
@@ -127,6 +109,31 @@ const withdrawProposal = async (req, res) => {
         res.status(500).json({ err: err.message });
     }
 }
+
+// Client related functions
+
+const getJobProposals = async (req, res) => {
+    try {
+
+        const foundJob = await Job.findById(req.params.jobId)
+        if (!foundJob) {
+            return res.status(404).json({ err: 'Job not found' })
+        }
+        if (foundJob.client.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ err: 'You can only view proposals for your own jobs.' })
+        }
+
+        const foundProposals = await Proposal.find({ job: req.params.jobId }).populate('freelancer')
+
+        req.status(200).json(foundProposals)
+
+    } catch (err) {
+        res.status(500).json({ err: err.message });
+    }
+}
+
+
+
 
 module.exports = {
     createProposal,
