@@ -66,6 +66,10 @@ const updateProposal = async (req, res) => {
     try {
         const proposalToEdit = await Proposal.findById(req.params.proposalId)
 
+        if (!proposalToEdit) {
+            return res.status(404).json({ err: 'Proposal not found' });
+        }
+
         if (proposalToEdit.freelancer.toString() === req.user._id.toString()) {
             return res.status(403).json({ err: 'You dont have access to edit this proposal.' })
         }
@@ -91,6 +95,10 @@ const updateProposal = async (req, res) => {
 const withdrawProposal = async (req, res) => {
     try {
         const proposalToWithdraw = await Proposal.findById(req.params.proposalId)
+
+        if (!proposalToWithdraw) {
+            return res.status(404).json({ err: 'Proposal not found' });
+        }
 
         if (proposalToWithdraw.freelancer.toString() === req.user._id.toString()) {
             return res.status(403).json({ err: 'You dont have access to edit this proposal.' })
@@ -132,7 +140,46 @@ const getJobProposals = async (req, res) => {
     }
 }
 
+const acceptProposal = async (req, res) => {
+    try {
+        const proposalToAccept = await Proposal.findById(req.params.proposalId).populate('job')
 
+        if (!proposalToAccept) {
+            return res.status(404).json({ err: 'Proposal not found' });
+        }
+
+        if (!proposalToAccept.job.client.toString() === req.user._id.toString()) {
+            return res.status(403).json({ err: 'You ar enot allowed to accept this proposal, you are not the owner!' })
+        }
+
+        if (proposalToAccept.status !== 'pending' || proposalToAccept.status !== 'shortlisted') {
+            return res.status(400).json({ err: 'This proposal is either already accepted or withdrawn.' })
+        }
+
+        // decline other proposals that are pending
+        const toDeclineProposals = await Proposal.find({ job: proposalToAccept.job._id })
+        
+        toDeclineProposals.map(async (currProposal) => {
+            if (currProposal._id !== proposalToAccept._id){
+            currProposal.status = 'declined'
+            await currProposal.save()}
+        })
+
+
+
+        // Create the Contract (F-CON-01) here 
+
+        // updat ejob to in progress
+        // const updateJob = await Job.findByIdAndUpdate(proposalToAccept.job._id, { status: 'in_progress' })
+        proposalToAccept.job.status = 'in_progress'
+
+        proposalToAccept.job.status.save()
+
+
+    } catch (err) {
+        res.status(500).json({ err: err.message });
+    }
+}
 
 
 module.exports = {
@@ -140,5 +187,6 @@ module.exports = {
     getJobProposals,
     getMyProposals,
     updateProposal,
-    withdrawProposal
+    withdrawProposal,
+    acceptProposal
 }
