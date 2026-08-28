@@ -84,16 +84,14 @@ const updateProposal = async (req, res) => {
     try {
         const proposalToEdit = await Proposal.findById(req.params.proposalId)
 
-        if ( proposalToEdit.freelancer.toString() === req.user._id.toString()) {
+        if (proposalToEdit.freelancer.toString() === req.user._id.toString()) {
             return res.status(403).json({ err: 'You dont have access edit this proposal.' })
         }
 
-        if (proposalToEdit.status !== 'pending'){
+        if (proposalToEdit.status !== 'pending') {
             return res.status(400).json({ err: 'This proposal is locked due to status change by client.' })
         }
 
-        // const updatedProposal = await Proposal.findOneAndUpdate(req.params.proposalId, req.body, { returnDocument: 'after' })
-        
         if (req.body.coverLetter) proposalToEdit.coverLetter = req.body.coverLetter
         if (req.body.amount) proposalToEdit.amount = req.body.amount
         if (req.body.deliveryDays) proposalToEdit.deliveryDays = req.body.deliveryDays
@@ -108,8 +106,32 @@ const updateProposal = async (req, res) => {
     }
 }
 
+const withdrawProposal = async (req, res) => {
+    try {
+        const proposalToWithdraw = await Proposal.findById(req.params.proposalId)
+
+        if (proposalToWithdraw.freelancer.toString() === req.user._id.toString()) {
+            return res.status(403).json({ err: 'You dont have access edit this proposal.' })
+        }
+
+        if (proposalToWithdraw.status !== 'pending') {
+            return res.status(400).json({ err: 'This proposal is locked due to status change by client.' })
+        }
+
+        proposalToWithdraw.status = 'withdrawn'
+
+        const withdrawnProposal = await proposalToWithdraw.save()
+        res.status(200).json(withdrawnProposal)
+
+    } catch (err) {
+        res.status(500).json({ err: err.message });
+    }
+}
+
 module.exports = {
     createProposal,
     getJobProposals,
-    getMyProposals
+    getMyProposals,
+    updateProposal,
+    withdrawProposal
 }
