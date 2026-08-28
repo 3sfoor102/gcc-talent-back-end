@@ -250,6 +250,33 @@ const shortlistProposal = async (req, res) => {
     }
 }
 
+const declineProposal = async (req, res) => {
+    try {
+        const proposalToDecline = await Proposal.findById(req.params.proposalId).populate('job')
+
+        if (!proposalToDecline) {
+            return res.status(404).json({ err: 'Proposal not found' });
+        }
+
+        if (!proposalToDecline.job.client.toString() === req.user._id.toString()) {
+            return res.status(403).json({ err: 'You are not allowed to accept this proposal, you are not the owner.' })
+        }
+
+        if (proposalToDecline.status !== 'pending' || proposalToDecline.status !== 'shortlisted') {
+            return res.status(400).json({ err: 'This proposal is either already accepted or withdrawn.' })
+        }
+
+        proposalToDecline.status = 'declined'
+        if (req.body.declineReason) {
+            proposalToDecline.declineReason = req.body.declineReason
+        }
+        proposalToDecline.save()
+
+    } catch (err) {
+        res.status(500).json({ err: err.message });
+    }
+}
+
 module.exports = {
     createProposal,
     getJobProposals,
