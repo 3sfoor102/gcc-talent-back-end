@@ -7,7 +7,23 @@ const getUserNotifications = async function (userId)
     return notifications
 }
 
+const markAsRead = async function (notificationId, userId)
+{
+    const notification = await Notification.findOneAndUpdate(
+        { _id: notificationId, user: userId },
+        { isRead: true },
+        { new: true }
+    )
+
+    if (!notification)
+    {
+        throw new Error('Notification not found')
+    }
+
+    return notification
+}
 
 module.exports = {
     getUserNotifications,
+    markAsRead
 }
