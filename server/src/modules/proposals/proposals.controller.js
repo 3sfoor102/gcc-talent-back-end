@@ -2,6 +2,37 @@ const Job = require('../../models/Job')
 const Proposal = require('../../models/Proposal')
 const FreelancerProfile = require('../../models/FreelancerProfile')
 
+const getJobProposals = async (req, res) => {
+    try {
+
+        const foundJob = await Job.findById(req.params.jobId)
+        if (!foundJob) {
+            return res.status(404).json({ err: 'Job not found' })
+        }
+        if (foundJob.client.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ err: 'You can only view proposals for your own jobs.' })
+        }
+
+        const foundProposals = await Proposal.find({ job: req.params.jobId }).populate('freelancer')
+
+        req.status(200).json(foundProposals)
+
+    } catch (err) {
+        res.status(500).json({ err: err.message });
+    }
+}
+
+const getMyProposals = async (req, res) => {
+    try {
+        const foundProposals = await Proposal.find({ freelancer: req.user._id }).populate('job').sort('-createdAt')
+
+        req.status(200).json(foundProposals)
+
+    } catch (err) {
+        res.status(500).json({ err: err.message });
+    }
+}
+
 const createProposal = async (req, res) => {
     try {
         const foundJob = await Job.findById(req.params.jobId)
@@ -49,31 +80,21 @@ const createProposal = async (req, res) => {
     }
 }
 
-const getJobProposals = async (req, res) => {
+const updateProposal = async (req, res) => {
     try {
+        const proposalToEdit = await Proposal.findById(req.params.proposalId)
 
-        const foundJob = await Job.findById(req.params.jobId)
-        if (!foundJob) {
-            return res.status(404).json({ err: 'Job not found' })
-        }
-        if (foundJob.client.toString() !== req.user._id.toString()) {
-            return res.status(403).json({ err: 'You can only view proposals for your own jobs.' })
+        if ( proposalToEdit.freelancer.toString() === req.user._id.toString()) {
+            return res.status(403).json({ err: 'You dont have access edit this proposal.' })
         }
 
-        const foundProposals = await Proposal.find({ job: req.params.jobId }).populate('freelancer')
+        if (proposalToEdit.status !== 'pending'){
+            return res.status(400).json({ err: 'This proposal is locked due to status change by client.' })
+        }
 
-        req.status(200).json(foundProposals)
+        const updatedProposal = await Proposal.findOneAndUpdate(req.params.proposalId, req.body, { returnDocument: 'after' })
 
-    } catch (err) {
-        res.status(500).json({ err: err.message });
-    }
-}
-
-const getMyProposals = async (req, res) => {
-    try {
-        const foundProposals = await Proposal.find({ freelancer: req.user._id }).populate('job').sort('-createdAt')
-
-        req.status(200).json(foundProposals)
+        res.status(200).json(updatedProposal)
 
     } catch (err) {
         res.status(500).json({ err: err.message });
