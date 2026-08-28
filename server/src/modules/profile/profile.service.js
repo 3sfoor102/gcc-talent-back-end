@@ -63,9 +63,24 @@ const updateFreelancerProfile = async function (userId, updateData)
 }
 
 
+
+const getClientProfile = async function (userId)
+{
+    const profile = await ClientProfile.findOne({ user: userId })
+    
+    if (!profile)
+    {
+        throw new Error('Client profile not found')
+    }
+
+    return profile
+}
+
+
 module.exports = {
     createFreelancerProfile,
     createClientProfile,
     getFreelancerProfile,
-    updateFreelancerProfile
+    updateFreelancerProfile,
+    getClientProfile,
 }
