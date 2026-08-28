@@ -30,7 +30,7 @@ const createClient = async function (req, res)
 {
     try {
         const userId = req.user.id
-        
+
         const profileData = req.body
 
         const profile = await profileService.createClientProfile(userId, profileData)
@@ -50,7 +50,31 @@ const createClient = async function (req, res)
     }
 }
 
+
+const getFreelancer = async function (req, res)
+{
+    try {
+        const userId = req.user.id
+        const profile = await profileService.getFreelancerProfile(userId)
+
+        res.status(200).json({
+            success: true,
+            data: {
+                profile
+            }
+        })
+    }
+    catch (err)
+    {
+        res.status(404).json({
+            success: false,
+            error: { message: err.message }
+        })
+    }
+}
+
 module.exports = {
     createFreelancer,
-    createClient
+    createClient,
+    getFreelancer,
 }
