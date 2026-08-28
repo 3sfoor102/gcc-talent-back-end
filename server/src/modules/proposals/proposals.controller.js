@@ -1,6 +1,7 @@
 const Job = require('../../models/Job')
 const Proposal = require('../../models/Proposal')
 const FreelancerProfile = require('../../models/FreelancerProfile')
+const Contract = require('../../models/Contract')
 
 // Freelancer related functions
 
@@ -141,18 +142,26 @@ const getJobProposals = async (req, res) => {
 }
 
 const acceptProposal = async (req, res) => {
+    const session = await mongoose.startSession()
+    session.startTransaction()
     try {
         const proposalToAccept = await Proposal.findById(req.params.proposalId).populate('job')
 
         if (!proposalToAccept) {
+            await session.abortTransaction()
+            session.endSession()
             return res.status(404).json({ err: 'Proposal not found' });
         }
 
         if (!proposalToAccept.job.client.toString() === req.user._id.toString()) {
-            return res.status(403).json({ err: 'You ar enot allowed to accept this proposal, you are not the owner!' })
+            await session.abortTransaction()
+            session.endSession()
+            return res.status(403).json({ err: 'You are not allowed to accept this proposal, you are not the owner.' })
         }
 
         if (proposalToAccept.status !== 'pending' || proposalToAccept.status !== 'shortlisted') {
+            await session.abortTransaction()
+            session.endSession()
             return res.status(400).json({ err: 'This proposal is either already accepted or withdrawn.' })
         }
 
@@ -170,17 +179,22 @@ const acceptProposal = async (req, res) => {
                 _id: { $ne: proposal._id }
             },
             { status: 'declined' },
+            { session }
         );
 
         // update job to in progress
         // const updateJob = await Job.findByIdAndUpdate(proposalToAccept.job._id, { status: 'in_progress' })
         proposalToAccept.job.status = 'in_progress'
-        proposalToAccept.job.status.save()
+        proposalToAccept.job.status.save({ session })
+
+        // change status of the proposal to accepted
+        proposalToAccept.status = 'accepted';
+        await proposalToAccept.save({ session })
 
 
 
         // Create the Contract (F-CON-01) here 
-        const newContract = await Contract.create({
+        const newContract = await Contract.create([{
             client: proposalToAccept.job.client,
             freelancer: proposalToAccept.freelancer,
             source: {
@@ -198,11 +212,16 @@ const acceptProposal = async (req, res) => {
                 dueDate: new Date(Date.now() + proposal.deliveryDays * 24 * 60 * 60 * 1000), // Add delivery days to current date
                 status: 'pending'
             }]
-        });
+        }], { session });
 
-        return res.status(201).json(newContract);
+        await session.commitTransaction();
+        session.endSession();
+
+        return res.status(201).json(newContract[0]);
 
     } catch (err) {
+        await session.abortTransaction();
+        session.endSession();
         res.status(500).json({ err: err.message });
     }
 }
