@@ -226,6 +226,29 @@ const acceptProposal = async (req, res) => {
     }
 }
 
+const shortlistProposal = async (req, res) => {
+    try {
+        const proposalToShortlist = await Proposal.findById(req.params.proposalId).populate('job')
+
+        if (!proposalToShortlist) {
+            return res.status(404).json({ err: 'Proposal not found' });
+        }
+
+        if (!proposalToShortlist.job.client.toString() === req.user._id.toString()) {
+            return res.status(403).json({ err: 'You are not allowed to accept this proposal, you are not the owner.' })
+        }
+
+        if (proposalToShortlist.status !== 'pending') {
+            return res.status(400).json({ err: 'This proposal is either already accepted or withdrawn.' })
+        }
+
+        proposalToShortlist.status = 'shortlisted'
+        proposalToShortlist.save()
+
+    } catch (err) {
+        res.status(500).json({ err: err.message });
+    }
+}
 
 module.exports = {
     createProposal,
@@ -233,5 +256,6 @@ module.exports = {
     getMyProposals,
     updateProposal,
     withdrawProposal,
-    acceptProposal
+    acceptProposal,
+    shortlistProposal
 }
