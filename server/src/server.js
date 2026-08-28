@@ -5,6 +5,7 @@ const errorHandler = require('./middleware/errorHandler')
 const verifyToken = require('./middleware/verify-token')
 const authCtrl = require('./modules/auth/auth.controller')
 const profileCtrl = require('./modules/profile/profile.controller')
+const notificationCtrl = require('./modules/notification/notification.controller')
 
 require('dotenv').config()
 const express = require('express')
@@ -39,6 +40,9 @@ app.get('/profile/freelancer', verifyToken, profileCtrl.getFreelancer)
 app.put('/profile/freelancer', verifyToken, profileCtrl.updateFreelancer)
 app.get('/profile/client', verifyToken, profileCtrl.getClient)
 app.put('/profile/client', verifyToken, profileCtrl.updateClient)
+app.get('/notifications', verifyToken, notificationCtrl.getNotifications)
+app.put('/notifications/:id/read', verifyToken, notificationCtrl.markNotificationRead)
+
 
 app.use(errorHandler)
 
