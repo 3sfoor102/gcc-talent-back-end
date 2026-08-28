@@ -157,24 +157,50 @@ const acceptProposal = async (req, res) => {
         }
 
         // decline other proposals that are pending
-        const toDeclineProposals = await Proposal.find({ job: proposalToAccept.job._id })
-        
-        toDeclineProposals.map(async (currProposal) => {
-            if (currProposal._id !== proposalToAccept._id){
-            currProposal.status = 'declined'
-            await currProposal.save()}
-        })
+        // const toDeclineProposals = await Proposal.find({ job: proposalToAccept.job._id })
+        // toDeclineProposals.map(async (currProposal) => {
+        //     if (currProposal._id !== proposalToAccept._id){
+        //     currProposal.status = 'declined'
+        //     await currProposal.save()}
+        // })
+        await Proposal.updateMany(
+            {
+                job: job._id,
+                status: { $in: ['pending', 'shortlisted'] },
+                _id: { $ne: proposal._id }
+            },
+            { status: 'declined' },
+        );
+
+        // update job to in progress
+        // const updateJob = await Job.findByIdAndUpdate(proposalToAccept.job._id, { status: 'in_progress' })
+        proposalToAccept.job.status = 'in_progress'
+        proposalToAccept.job.status.save()
 
 
 
         // Create the Contract (F-CON-01) here 
+        const newContract = await Contract.create({
+            client: proposalToAccept.job.client,
+            freelancer: proposalToAccept.freelancer,
+            source: {
+                type: 'job',
+                job: proposalToAccept.job._id,
+                proposal: proposalToAccept._id
+            },
+            title: job.title,
+            totalAmount: proposalToAccept.amount,
+            currency: 'USD',
+            status: 'active',
+            milestones: proposal.milestones.length > 0 ? proposal.milestones : [{
+                title: 'Final Delivery',
+                amount: proposal.amount,
+                dueDate: new Date(Date.now() + proposal.deliveryDays * 24 * 60 * 60 * 1000), // Add delivery days to current date
+                status: 'pending'
+            }]
+        });
 
-        // updat ejob to in progress
-        // const updateJob = await Job.findByIdAndUpdate(proposalToAccept.job._id, { status: 'in_progress' })
-        proposalToAccept.job.status = 'in_progress'
-
-        proposalToAccept.job.status.save()
-
+        return res.status(201).json(newContract);
 
     } catch (err) {
         res.status(500).json({ err: err.message });
