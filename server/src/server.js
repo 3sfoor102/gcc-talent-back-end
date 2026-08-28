@@ -36,6 +36,8 @@ app.post('/profile/freelancer', verifyToken, profileCtrl.createFreelancer)
 app.post('/profile/client', verifyToken, profileCtrl.createClient)
 app.get('/profile/freelancer', verifyToken, profileCtrl.getFreelancer)
 app.put('/profile/freelancer', verifyToken, profileCtrl.updateFreelancer)
+app.get('/profile/client', verifyToken, profileCtrl.getClient)
+app.put('/profile/client', verifyToken, profileCtrl.updateClient)
 
 
 app.listen(PORT, function () {
