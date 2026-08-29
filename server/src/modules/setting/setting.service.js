@@ -21,4 +21,5 @@ const upsertSetting = async function (key, value)
 
 module.exports = {
     getAllSettings,
+    upsertSetting
 }
