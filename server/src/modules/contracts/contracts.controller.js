@@ -66,7 +66,53 @@ const showContract = async (req, res) => {
     }
 }
 
+const addMilestone = async (req, res) => {
+    try {
+        const foundContract = await Contract.findById(req.params.contractId)
+
+        if (!foundContract) {
+            return res.status(404).json({ err: 'Contract not found' })
+        }
+
+        if (foundContract.client.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ err: 'You do not have permission to create a milestone for this contract.' })
+        }
+
+        if (foundContract.status !== 'active') {
+            return res.status(400).json({ err: `Cannot add a milestone to a ${foundContract.status} contract` })
+        }
+
+        const milestoneDetails = {
+            title: req.body.title,
+            description: req.body.description,
+            amount: req.body.amount,
+            dueDate: req.body.dueDate,
+            status: 'pending'
+        }
+
+        foundContract.milestones.push(milestoneDetails)
+
+        foundContract.save()
+        
+        return res.status(201).json(foundContract)
+
+
+    } catch (err) {
+        res.status(500).json({ err: err.message });
+    }
+}
+
+const editMilestone = async (req, res) => {
+    try {
+
+    } catch (err) {
+        res.status(500).json({ err: err.message });
+    }
+}
+
 module.exports = {
     listContracts,
     showContract,
+    addMilestone,
+    editMilestone
 }
