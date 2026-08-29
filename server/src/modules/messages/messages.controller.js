@@ -170,3 +170,11 @@ const markAsRead = async (req, res) => {
         res.status(500).json({ err: err.message })
     }
 }
+
+module.exports = {
+    startConversation,
+    getConversations,
+    getMessages,
+    sendMessage,
+    markAsRead
+}
