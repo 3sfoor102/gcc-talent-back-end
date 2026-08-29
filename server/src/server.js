@@ -7,6 +7,7 @@ const authCtrl = require('./modules/auth/auth.controller')
 const profileCtrl = require('./modules/profile/profile.controller')
 const notificationCtrl = require('./modules/notification/notification.controller')
 const reportCtrl = require('./modules/report/report.controller')
+const settingCtrl = require('./modules/setting/setting.controller')
 
 require('dotenv').config()
 const express = require('express')
@@ -45,6 +46,8 @@ app.get('/notifications', verifyToken, notificationCtrl.getNotifications)
 app.put('/notifications/:id/read', verifyToken, notificationCtrl.markNotificationRead)
 app.post('/reports', verifyToken, reportCtrl.submitReport)
 app.get('/reports', verifyToken, reportCtrl.getReports)
+app.get('/settings', verifyToken, settingCtrl.getSettings)
+app.put('/settings', verifyToken, settingCtrl.updateSetting)
 
 
 app.use(errorHandler)
