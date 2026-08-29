@@ -38,3 +38,21 @@ const startConversation = async (req, res) => {
     }
 }
 
+const getConversations = async (req, res) => {
+    try {
+        const conversations = await Conversation.find({ participants: req.user._id })
+            .populate('participants')
+            .populate('context.job')
+            .populate('context.contract')
+            .sort('-updatedAt')
+
+        return res.status(200).json({
+            data: conversations,
+            meta: { total: conversations.length }
+        })
+
+    } catch (err) {
+        res.status(500).json({ err: err.message })
+    }
+}
+
