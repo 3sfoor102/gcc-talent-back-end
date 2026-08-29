@@ -29,10 +29,30 @@ const processDeposit = async(userId, amount, cardNumber) => {
         throw error
     }
 const session = await mongoose.startSession()
+session.startTransaction()
+try {
+    const user = await User.findById(userId).session(session)
+    await user.save({session})
 
+    const transaction = await Transaction.create([{
+        user: userId, 
+        type: 'deposit', 
+        amount: amount,
+        direction: 'credit',
+        balanceAfter: user.wallet.available,
+        status: 'completed',
+        meta: {cardLast4: cardNumber.slice(-4)}
+    }], {session})
+    await session.commitTransaction()
+    return {wallet: user.wallet, transaction: transaction[0]}
 
-
-
+} catch (error) {
+    await session.abortTransaction()
+    throw error
+    
+} finally {
+    session.endSession()
+}
 
 }   
 
