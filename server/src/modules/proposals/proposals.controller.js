@@ -245,6 +245,7 @@ const shortlistProposal = async (req, res) => {
         proposalToShortlist.status = 'shortlisted'
         proposalToShortlist.save()
 
+        return res.status(200).json(proposalToShortlist)
     } catch (err) {
         res.status(500).json({ err: err.message });
     }
@@ -272,6 +273,7 @@ const declineProposal = async (req, res) => {
         }
         proposalToDecline.save()
 
+        return res.status(200).json(proposalToDecline)
     } catch (err) {
         res.status(500).json({ err: err.message });
     }

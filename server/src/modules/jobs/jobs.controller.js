@@ -14,6 +14,8 @@ const indexJob = async (req, res) => {
     }
 }
 
+
+
 const showJob = async (req, res) => {
     try {
 
@@ -158,6 +160,7 @@ const changeStatus = async (req, res) => {
 module.exports = {
     indexJob,
     showJob,
+    clientJobs,
     createJob,
     updateJob,
     deleteJob,
