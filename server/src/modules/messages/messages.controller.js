@@ -93,3 +93,55 @@ const getMessages = async (req, res) => {
         res.status(500).json({ err: err.message })
     }
 }
+
+const sendMessage = async (req, res) => {
+    try {
+
+        const text = req.body.text
+
+        const foundConversation = await Conversation.findById(req.params.conversationId);
+        if (!foundConversation) {
+            return res.status(404).json({ err: 'Conversation not found' })
+        }
+
+        if (!foundConversation.participants.includes(req.user._id.toString())) {
+            return res.status(403).json({ err: 'You are not a participant in this conversation.' })
+        }
+
+        let attachments = [];
+        if (req.files && req.files.length > 0) {
+            attachments = req.files.map((file) => ({
+                url: file.path,
+                name: file.originalname
+            }))
+        }
+
+        if (!text && attachments.length === 0) {
+            return res.status(400).json({ err: 'Message must contain text or an attachment.' })
+        }
+
+        const newMessage = await Message.create({
+            conversation: req.params.conversationId,
+            sender: req.user._id,
+            text,
+            attachments,
+            readBy: [req.user._id]
+        })
+
+        foundConversation.lastMessage = {
+            text: text || 'Sent an attachment',
+            sender: req.user._id,
+            at: Date.now()
+        }
+
+        foundConversation.unread = (foundConversation.unread || 0) + 1
+
+        await foundConversation.save()
+
+        return res.status(201).json(newMessage)
+
+    } catch (err) {
+        res.status(500).json({ err: err.message })
+    }
+}
+
