@@ -45,7 +45,7 @@ const createReview = async (req, res) => {
 
         const stats = await Review.aggregate([
             { $match: { reviewee: thisReviewee } },
-            { 
+            {
                 $group: {
                     _id: '$reviewee',
                     ratingAvg: { $avg: '$rating' },
@@ -66,4 +66,45 @@ const createReview = async (req, res) => {
     } catch (err) {
         res.status(500).json({ err: err.message });
     }
+}
+
+const listUserReviews = async (req, res) => {
+    try {
+
+        const page = req.body.page || 1
+        const limit = req.body.limit || 12
+
+        const pageNum = parseInt(page, 10)
+        const limitNum = parseInt(limit, 10)
+        const skip = (pageNum - 1) * limitNum
+
+        const query = { reviewee: req.params.userId }
+
+        const [reviews, total] = await Promise.all([
+            Review.find(query)
+                .populate('reviewer')
+                .populate('contract')
+                .sort('-createdAt') 
+                .skip(skip)
+                .limit(limitNum),
+            Review.countDocuments(query)
+        ])
+
+        return res.status(200).json({
+            data: reviews,
+            meta: {
+                page: pageNum,
+                limit: limitNum,
+                total
+            }
+        })
+
+    } catch (err) {
+        res.status(500).json({ err: err.message });
+    }
+}
+
+module.exports = {
+    createReview,
+    listUserReviews
 }
