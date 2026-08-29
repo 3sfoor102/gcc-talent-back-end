@@ -286,5 +286,6 @@ module.exports = {
     updateProposal,
     withdrawProposal,
     acceptProposal,
-    shortlistProposal
+    shortlistProposal,
+    declineProposal
 }
