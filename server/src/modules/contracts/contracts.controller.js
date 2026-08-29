@@ -93,7 +93,7 @@ const addMilestone = async (req, res) => {
         foundContract.milestones.push(milestoneDetails)
 
         foundContract.save()
-        
+
         return res.status(201).json(foundContract)
 
 
@@ -104,6 +104,39 @@ const addMilestone = async (req, res) => {
 
 const editMilestone = async (req, res) => {
     try {
+        const foundContract = await Contract.findById(req.params.contractId)
+
+        if (!foundContract) {
+            return res.status(404).json({ err: 'Contract not found' })
+        }
+
+        if (foundContract.client.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ err: 'You do not have permission to create a milestone for this contract.' })
+        }
+
+        const foundMilestone = foundContract.milestones.id(req.params.milestoneId)
+
+        if (!foundMilestone) {
+            return res.status(404).json({ err: 'Milestone not found' })
+        }
+
+        if (foundMilestone.status !== 'pending') {
+            return res.status(400).json({ err: 'You can only edit unfunded milestones. Once funded, the terms are locked in escrow.' })
+        }
+
+        if (req.body.amount && Number(req.body.amount) !== foundMilestone.amount) {
+            foundContract.totalAmount -= foundMilestone.amount
+            foundContract.totalAmount += Number(req.body.amount)
+            foundMilestone.amount = Number(req.body.amount)
+        }
+
+        if (req.body.title) foundMilestone.title = req.body.title
+        if (req.body.description) foundMilestone.description = req.body.description
+        if (req.body.dueDate) foundMilestone.dueDate = req.body.dueDate
+
+        await foundMilestone.save()
+
+        return res.status(200).json(foundContract)
 
     } catch (err) {
         res.status(500).json({ err: err.message });
