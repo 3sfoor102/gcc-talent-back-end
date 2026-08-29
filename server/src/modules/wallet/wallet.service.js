@@ -18,6 +18,21 @@ const getUserWallet = async (userId) => {
 }
 
 const processDeposit = async(userId, amount, cardNumber) => {
-    if
-}
+    if (cardNumber.startWith('4000')) {
+        const error = new Error ("Payment Declined: Insufficient funds or invalid card")
+        error.statusCode = 402
+        throw error
+    }
+    if (!cardNumber.startWith('4242')) {
+        const error = new Error('Paymed Failed: Invalid Card')
+        error.statusCode = 400
+        throw error
+    }
+const session = await mongoose.startSession()
+
+
+
+
+
+}   
 
