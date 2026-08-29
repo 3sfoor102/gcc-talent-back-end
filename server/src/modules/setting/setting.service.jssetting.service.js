@@ -1,1 +1,0 @@
-const Setting = require('../../models/Setting')
