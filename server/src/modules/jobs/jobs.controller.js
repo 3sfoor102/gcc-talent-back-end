@@ -14,7 +14,72 @@ const indexJob = async (req, res) => {
     }
 }
 
+const searchAndFilter = async (req, res) => {
+    try {
 
+        const queryValues = {
+            q: req.query.q,
+            category: req.query.category,
+            skills: req.query.skills,
+            budgetType: req.query.budgetType,
+            minBudget: req.query.minBudget,
+            maxBudget: req.query.maxBudget,
+            experienceLevel: req.query.experienceLevel,
+            page: req.query.page || 1,
+            limit: req.query.limit || 12,
+            sort: req.query.sort || '-createdAt',
+        }
+
+        const query = {
+            status: 'open',
+            isHidden: { $ne: true }
+        }
+
+        if (queryValues.q) {
+            query.$text = { $search: queryValues.q }
+        }
+        if (queryValues.category) query.category = queryValues.category
+        if (queryValues.budgetType) query.budgetType = queryValues.budgetType
+        if (queryValues.experienceLevel) query.experienceLevel = queryValues.experienceLevel
+        
+        if (queryValues.skills) {
+            query.skills = { $in: queryValues.skills.split(',') }
+        }
+
+        if (queryValues.minBudget || queryValues.maxBudget) {
+            query.budgetMin = {}
+            if (queryValues.minBudget) query.budgetMin.$gte = Number(queryValues.minBudget)
+            if (queryValues.maxBudget) query.budgetMin.$lte = Number(queryValues.maxBudget)
+        }
+
+        const pageNum = parseInt(queryValues.page, 10);
+        const limitNum = parseInt(queryValues.limit, 10);
+        const skip = (pageNum - 1) * limitNum;
+
+
+        const [jobs, total] = await Promise.all([
+            Job.find(query)
+                .populate('client')
+                .populate('category')
+                .sort(sort)
+                .skip(skip)
+                .limit(limitNum),
+            Job.countDocuments(query)
+        ])
+
+        return res.status(200).json({
+            data: jobs,
+            meta: { 
+                page: pageNum, 
+                limit: limitNum, 
+                total 
+            }
+        })
+
+    } catch (err) {
+        res.status(500).json({ err: err.message });
+    }
+}
 
 const showJob = async (req, res) => {
     try {
@@ -145,7 +210,7 @@ const changeStatus = async (req, res) => {
 
         const updateStatus = { status: req.body.status }
 
-        const updatedJob = await Job.findByIdAndUpdate(req.params.jobId, updateStatus , { returnDocument: 'after' })
+        const updatedJob = await Job.findByIdAndUpdate(req.params.jobId, updateStatus, { returnDocument: 'after' })
 
 
         res.status(200).json(updateJob)
@@ -159,6 +224,7 @@ const changeStatus = async (req, res) => {
 
 module.exports = {
     indexJob,
+    searchAndFilter,
     showJob,
     clientJobs,
     createJob,
