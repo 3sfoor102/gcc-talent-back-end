@@ -43,6 +43,30 @@ const listContracts = async (req, res) => {
     }
 }
 
+const showContract = async (req, res) => {
+    try {
+
+        const foundContract = await Contract.findById(req.params.contractId).populate('client').populate('freelancer').populate('source.job').populate('source.gig')
+
+        if (!foundContract) {
+            return res.status(404).json({ err: 'Contract not found' })
+        }
+
+        if (
+            foundContract.client.toString() !== req.user._id.toString() &&
+            foundContract.freelancer.toString() !== req.user._id.toString()
+        ) {
+            return res.status(403).json({ err: 'You are not a participant in this contract.' })
+        }
+
+        return res.status(200).json(contract)
+
+    } catch (err) {
+        res.status(500).json({ err: err.message });
+    }
+}
+
 module.exports = {
     listContracts,
+    showContract,
 }
