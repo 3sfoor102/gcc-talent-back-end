@@ -1,6 +1,6 @@
 
 const walletService = require("../services/wallet.service.js");
-const wallet
+
 const getWallet = async (req, res, next) => {
     try {
         const userId = req.user._id
@@ -36,11 +36,17 @@ const deposit = async (req, res, next) => {
 const withdraw = async (req, res, next) => {
     try {
         const userId = req.user._id
+        const {amount, method} = req.body
+
+        const result = await walletService.processWithdrawal(userId, amount, method) 
         
-        
+        res.status(200).json({
+            success: true, 
+            data: result, 
+        })
     } catch (error) {
-        
+        next(error)
     }
 }
 
-module.exports = { depositو getWallet, withdraw };
+module.exports = { deposit, getWallet, withdraw };
