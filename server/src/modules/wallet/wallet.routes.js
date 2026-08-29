@@ -1,5 +1,5 @@
-const express = require("express")
-
+const express = require('express');
+const walletController = this.require('./wallet.controller.js')
 const router = express.Router()
 
 // ONLY CLIENTS SHOULD BE ABLE TO ACCESS THIS ROUTE

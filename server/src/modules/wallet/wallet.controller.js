@@ -1,5 +1,5 @@
 
-const User = require('../')
+const walletService = require('./wallet.service.js')
 
 const getWallet = async (req, res, next) => {
     try {
