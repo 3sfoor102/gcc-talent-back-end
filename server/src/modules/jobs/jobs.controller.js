@@ -14,8 +14,6 @@ const indexJob = async (req, res) => {
     }
 }
 
-
-
 const showJob = async (req, res) => {
     try {
 
@@ -112,8 +110,6 @@ const updateJob = async (req, res) => {
 
     }
 }
-
-
 
 const deleteJob = async (req, res) => {
     try {
