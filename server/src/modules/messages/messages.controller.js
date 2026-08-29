@@ -145,3 +145,28 @@ const sendMessage = async (req, res) => {
     }
 }
 
+const markAsRead = async (req, res) => {
+    try {
+        const foundConversation = await Conversation.findById(req.params.conversationId)
+        if (!foundConversation) {
+            return res.status(404).json({ err: 'Conversation not found' })
+        }
+
+        if (!foundConversation.participants.includes(req.user._id.toString())) {
+            return res.status(403).json({ err: 'You are not a participant in this conversation.' })
+        }
+
+        await Message.updateMany(
+            { conversation: req.params.conversationId, readBy: { $ne: req.user._id } },
+            { $push: { readBy: req.user._id } }
+        )
+
+        foundConversation.unread = 0
+        await foundConversation.save()
+
+        return res.status(200).json(foundConversation)
+
+    } catch (err) {
+        res.status(500).json({ err: err.message })
+    }
+}
