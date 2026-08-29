@@ -18,6 +18,15 @@ const createReport = async function (reporterId, reportData)
     return report
 }
 
+
+const getMyReports = async function (reporterId)
+{
+    const reports = await Report.find({ reporter: reporterId }).sort({ createdAt: -1 })
+    
+    return reports
+}
+
 module.exports = {
     createReport,
+    getMyReports
 }
