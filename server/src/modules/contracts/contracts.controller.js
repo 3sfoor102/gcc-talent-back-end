@@ -43,6 +43,24 @@ const createReview = async (req, res) => {
             scores: req.body.scores
         })
 
+        const stats = await Review.aggregate([
+            { $match: { reviewee: thisReviewee } },
+            { 
+                $group: {
+                    _id: '$reviewee',
+                    ratingAvg: { $avg: '$rating' },
+                    ratingCount: { $sum: 1 }
+                }
+            }
+        ])
+
+        if (stats.length > 0) {
+            await User.findByIdAndUpdate(thisReviewee, {
+                ratingAvg: Math.round(stats[0].ratingAvg * 10) / 10,
+                ratingCount: stats[0].ratingCount
+            })
+        }
+
         req.status(201).json(newReview)
 
     } catch (err) {
