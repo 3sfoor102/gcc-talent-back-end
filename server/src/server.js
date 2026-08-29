@@ -6,6 +6,7 @@ const verifyToken = require('./middleware/verify-token')
 const authCtrl = require('./modules/auth/auth.controller')
 const profileCtrl = require('./modules/profile/profile.controller')
 const notificationCtrl = require('./modules/notification/notification.controller')
+const reportCtrl = require('./modules/report/report.controller')
 
 require('dotenv').config()
 const express = require('express')
@@ -42,6 +43,8 @@ app.get('/profile/client', verifyToken, profileCtrl.getClient)
 app.put('/profile/client', verifyToken, profileCtrl.updateClient)
 app.get('/notifications', verifyToken, notificationCtrl.getNotifications)
 app.put('/notifications/:id/read', verifyToken, notificationCtrl.markNotificationRead)
+app.post('/reports', verifyToken, reportCtrl.submitReport)
+app.get('/reports', verifyToken, reportCtrl.getReports)
 
 
 app.use(errorHandler)
