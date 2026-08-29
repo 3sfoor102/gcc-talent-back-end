@@ -61,7 +61,38 @@ const processWithdrawal = async (userId, amount, method) => {
     session.startTransaction()
 }
 try {
+    const user = await User.findById(userId).session(session)
+    if (user.wallet.available < amount) {
+        const error = new Error('Insufficient available funds for withdrawal')
+        error.statusCode = 422
+        throw error
+    }
+
+    user.wallet.available -= amount
+    await user.save({ session })
+
+    const transaction = await Transaction.create([{
+        user: userId, 
+        type: 'withdrawal',
+        amount: amount, 
+        direction: 'debit',
+        balanceAfter: user.wallet.available,
+        status: 'completed', 
+        meta: {method: method}
     
+    }], {session})
+
+    return {wallet: user.wallet, transaction: transaction[0]}
+
 } catch (error) {
-    
+    await session.abortTransaction()
+    throw error
+} finally {
+    session.endSession()
+}
+
+module.exports = {
+    getUserWallet,
+    processDeposit,
+    processWithdrawal
 }
