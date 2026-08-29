@@ -1,0 +1,1 @@
+const settingService = require('./setting.service')
