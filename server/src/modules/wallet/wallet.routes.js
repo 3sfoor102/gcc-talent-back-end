@@ -1,24 +1,14 @@
 const express = require('express');
-const walletController = this.require('./wallet.controller.js')
-const router = express.Router()
+const walletController = require('./wallet.controller.js');
+const verifyToken = require('../../middleware/verifyToken.js');
+const authorize = require('../../middleware/authorize.js');
 
-// ONLY CLIENTS SHOULD BE ABLE TO ACCESS THIS ROUTE
-// router.get('/wallet', (req, res) => {
-//     res.send('This is the wallet route')
-// })
+const router = express.Router();
 
-router.post('/wallet/deposit', (req, res) => {
-    res.send('This is the wallet route')
-})
-// router.post('/wallet/withdraw', (req, res) => {
-//     res.send('This is the wallet route')
-// })
+router.use(verifyToken);
 
-// router.get('/transactions?type=&page=', (req, res) => {
-//     res.send('This is the wallet route')
-// })
+router.get('/', walletController.getWallet);
+router.post('/deposit', authorize('client'), walletController.deposit);
+router.post('/withdraw', authorize('freelancer'), walletController.withdraw);
 
-
-
-
-module.exports = router
+module.exports = router;
