@@ -2,12 +2,15 @@ const dns = require("node:dns")
 dns.setServers(["8.8.8.8", "1.1.1.1"])
 
 const errorHandler = require('./middleware/errorHandler')
-const verifyToken = require('./middleware/verify-token')
+const verifyToken = require('./middleware/verify-token.js')
 const authCtrl = require('./modules/auth/auth.controller')
 const profileCtrl = require('./modules/profile/profile.controller')
 const notificationCtrl = require('./modules/notification/notification.controller')
 const reportCtrl = require('./modules/report/report.controller')
 const settingCtrl = require('./modules/setting/setting.controller')
+
+const walletRouter = require('./modules/wallet/wallet.routes.js');
+const contractRouter = require('./modules/contracts/contracts.routes.js');
 
 require('dotenv').config()
 const express = require('express')
@@ -16,7 +19,7 @@ const mongoose = require('mongoose')
 const cors = require('cors')
 const morgan = require('morgan')
 
-const PORT = process.env.PORT ? process.env.PORT : "5000"
+const PORT = process.env.PORT ? process.env.PORT : "3000"
 
 mongoose.connect(process.env.MONGODB_URI)
 
@@ -49,6 +52,9 @@ app.get('/reports', verifyToken, reportCtrl.getReports)
 app.get('/settings', verifyToken, settingCtrl.getSettings)
 app.put('/settings', verifyToken, settingCtrl.updateSetting)
 
+
+app.use('/api/v1/wallet', walletRouter);
+app.use('/api/v1/contracts', contractRouter);
 
 app.use(errorHandler)
 

@@ -1,5 +1,5 @@
 const walletService = require('./wallet.service.js');
-
+const User = require('../../models/User.js')
 const getWallet = async (req, res, next) => {
     try {
         const userId = req.user._id;

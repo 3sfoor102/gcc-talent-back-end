@@ -1,6 +1,6 @@
 const express = require('express');
 const contractsController = require('./contracts.controller.js');
-const verifyToken = require('../../middleware/verifyToken.js');
+const verifyToken = require('../../middleware/verify-token.js');
 const authorize = require('../../middleware/authorize.js');
 
 const router = express.Router();
