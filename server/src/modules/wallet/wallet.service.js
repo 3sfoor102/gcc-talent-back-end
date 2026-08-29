@@ -56,3 +56,12 @@ try {
 
 }   
 
+const processWithdrawal = async (userId, amount, method) => {
+    const session = await mongoose.startSession()
+    session.startTransaction()
+}
+try {
+    
+} catch (error) {
+    
+}
