@@ -2,7 +2,7 @@ const contractsService = require('./contracts.service.js');
 
 const getContracts = async (req, res, next) => {
     try {
-        const userId = req.user._id;
+        const userId = req.user._id || req.user.id;
         const role = req.user.role;
         const { status } = req.query;
 
@@ -20,7 +20,7 @@ const getContracts = async (req, res, next) => {
 const getContractById = async (req, res, next) => {
     try {
         const contractId = req.params.id;
-        const userId = req.user._id;
+        const userId = req.user._id || req.user.id;
         const role = req.user.role;
 
         const result = await contractsService.getContractWorkspace(contractId, userId, role);
@@ -37,7 +37,7 @@ const getContractById = async (req, res, next) => {
 const addMilestone = async (req, res, next) => {
   try {
     const contractId = req.params.id;
-    const clientId = req.user._id;
+    const clientId = req.user._id || req.user.id;
     const milestoneData = req.body; 
 
     const result = await contractsService.addMilestone(contractId, clientId, milestoneData);
@@ -54,7 +54,7 @@ const addMilestone = async (req, res, next) => {
 const fundMilestone = async (req, res, next) => {
   try {
     const { id: contractId, mid: milestoneId } = req.params;
-    const clientId = req.user._id;
+    const clientId = req.user._id || req.user.id;
 
     const result = await contractsService.fundMilestone(contractId, milestoneId, clientId);
 
@@ -70,7 +70,7 @@ const fundMilestone = async (req, res, next) => {
 const deliverMilestone = async (req, res, next) => {
   try {
     const { id: contractId, mid: milestoneId } = req.params;
-    const freelancerId = req.user._id;
+    const freelancerId = req.user._id || req.user.id;
     const deliveryData = req.body;
 
     const result = await contractsService.deliverMilestone(contractId, milestoneId, freelancerId, deliveryData);
@@ -87,7 +87,7 @@ const deliverMilestone = async (req, res, next) => {
 const approveMilestone = async (req, res, next) => {
   try {
     const { id: contractId, mid: milestoneId } = req.params;
-    const clientId = req.user._id;
+    const clientId = req.user._id || req.user.id;
 
     const result = await contractsService.approveMilestone(contractId, milestoneId, clientId);
 
