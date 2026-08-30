@@ -1,17 +1,23 @@
-const express = require('express')
-const router = express.Router()
-const { authenticate } = require('../../middleware/auth')
-const contractsCTRL = require('../controllers/contracts.controller')
+const express = require('express');
+const router = express.Router();
+const contractsController = require('../controllers/contracts.controller.js');
+const { createReview } = require('../controllers/reviews.controller.js');
+const verifyToken = require('../../middleware/verify-token.js');
+const authorize = require('../../middleware/authorize.js');
 
-const { createReview } = require('../controllers/reviews.controller')
+router.use(verifyToken);
 
+router.get('/', contractsController.getContracts);
+router.get('/:id', contractsController.getContractById);
 
-router.get('/', authenticate, contractsCTRL.listContracts)
-router.get('/:contractId', authenticate, contractsCTRL.showContract)
+router.post('/:id/milestones', authorize('client'), contractsController.addMilestone);
+router.patch('/:id/milestones/:mid', authorize('client'), contractsController.editMilestone);
 
-router.post('/:contractId/milestones', authenticate, contractsCTRL.addMilestone)
-router.patch('/:contractId/milestones/:milestoneId', authenticate, contractsCTRL.editMilestone)
+router.post('/:id/milestones/:mid/fund', authorize('client'), contractsController.fundMilestone);
+router.post('/:id/milestones/:mid/approve', authorize('client'), contractsController.approveMilestone);
 
-router.post('/:contractId/reviews', authenticate, contractsCTRL.createReview)
+router.post('/:id/milestones/:mid/deliver', authorize('freelancer'), contractsController.deliverMilestone);
 
-module.exports = router
+router.post('/:id/reviews', createReview);
+
+module.exports = router;
