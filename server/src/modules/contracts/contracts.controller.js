@@ -395,5 +395,6 @@ module.exports = {
     editMilestone,
     fundMilestone,
     deliverMilestone,
-    approveMilestone
+    approveMilestone,
 };
+
