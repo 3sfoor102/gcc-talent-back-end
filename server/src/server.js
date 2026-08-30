@@ -52,6 +52,11 @@ app.put('/settings', verifyToken, settingCtrl.updateSetting)
 
 app.use(errorHandler)
 
+
+
+// test 
+
+
 app.listen(PORT, function () {
     console.log(`The express app is ready on port ${PORT}! ✨✨✨`)
 })
