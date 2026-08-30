@@ -1,8 +1,23 @@
-const jobController = require('./jobs.controller')
+const express = require('express')
+const router = express.Router()
 
-// might need to reuqire the verify-token middleware!
-// const verifyToken = require('./middleware/verify-token')
-// app.use(verifyToken)
+const { authenticate, authorize } = require('../../middleware/auth')
 
+const jobsCTRL = require('./jobs.controller')
 
-app.get('/jobs', jobController.indexJob)
+router.get('/', jobsCTRL.indexJob)
+
+router.get('/mine', authenticate, authorize('client'), jobsCTRL.clientJobs)
+router.post('/', authenticate, authorize('client'), jobsCTRL.createJob)
+
+router.get('/:jobId', jobsCTRL.showJob)
+
+router.patch('/:jobId', authenticate, authorize('client'), jobsCTRL.updateJob)
+router.delete('/:jobId', authenticate, authorize('client'), jobsCTRL.deleteJob)
+
+router.post('/:jobId/close', authenticate, authorize('client'), jobsCTRL.changeStatus)
+router.post('/:jobId/reopen', authenticate, authorize('client'), jobsCTRL.changeStatus)
+
+router.get('/', jobsCTRL.searchAndFilter)
+
+module.exports = router

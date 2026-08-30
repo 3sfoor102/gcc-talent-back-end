@@ -279,6 +279,8 @@ const declineProposal = async (req, res) => {
     }
 }
 
+
+
 module.exports = {
     createProposal,
     getJobProposals,
