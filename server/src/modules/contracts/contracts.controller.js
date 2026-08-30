@@ -7,14 +7,14 @@ const Review = require('../../models/Review')
 const createReview = async (req, res) => {
     try {
 
-        const foundContract = Contract.findById(req.params.contractId)
+        const foundContract = await Contract.findById(req.params.contractId)
 
         if (!foundContract) {
-            return res.status(404).json({ err: 'Contract not found' });
+            return res.status(404).json({ err: 'Contract not found' })
         }
 
         if (foundContract.status !== 'completed' && foundContract.status !== 'cancelled') {
-            return res.status(400).json({ err: `Contract is still ${foundContract.status}` });
+            return res.status(422).json({ err: `Cannot review a contract that is ${foundContract.status}` })
         }
 
         let thisReviewer = req.user._id
@@ -25,17 +25,16 @@ const createReview = async (req, res) => {
         } else if (req.user._id.toString() === foundContract.freelancer.toString()) {
             thisReviewee = foundContract.client
         } else {
-            return res.status(403).json({ err: `You do not have the permission to leave a review on this contract` });
+            return res.status(403).json({ err: `You do not have the permission to leave a review on this contract` })
         }
 
-        const foundReview = await Review.findOne({ reviewer: thisReviewer, contract: foundContract })
-
+        const foundReview = await Review.findOne({ reviewer: thisReviewer, contract: foundContract._id })
         if (foundReview) {
-            return res.status(400).json({ err: 'You have an existing review on this contract' });
+            return res.status(409).json({ err: 'You have an existing review on this contract' })
         }
 
         const newReview = await Review.create({
-            contract: foundContract,
+            contract: foundContract._id,
             reviewer: thisReviewer,
             reviewee: thisReviewee,
             rating: req.body.rating,
@@ -61,7 +60,7 @@ const createReview = async (req, res) => {
             })
         }
 
-        req.status(201).json(newReview)
+        return res.status(201).json(newReview)
 
     } catch (err) {
         res.status(500).json({ err: err.message });
@@ -71,8 +70,8 @@ const createReview = async (req, res) => {
 const listUserReviews = async (req, res) => {
     try {
 
-        const page = req.body.page || 1
-        const limit = req.body.limit || 12
+        const page = req.query.page || 1
+        const limit = req.query.limit || 12
 
         const pageNum = parseInt(page, 10)
         const limitNum = parseInt(limit, 10)
@@ -84,7 +83,7 @@ const listUserReviews = async (req, res) => {
             Review.find(query)
                 .populate('reviewer')
                 .populate('contract')
-                .sort('-createdAt') 
+                .sort('-createdAt')
                 .skip(skip)
                 .limit(limitNum),
             Review.countDocuments(query)
