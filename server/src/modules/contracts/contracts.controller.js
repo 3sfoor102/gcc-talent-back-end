@@ -9,9 +9,9 @@ const listContracts = async (req, res) => {
         const userId = req.user._id || req.user.id || req.user.userId;
 
         const queryValues = {
-            status: req.body.status,
-            page: req.body.page || 1,
-            limit: req.body.limit || 12
+            status: req.query.status,
+            page: req.query.page || 1,
+            limit: req.query.limit || 12
         }
 
         const query = {
@@ -36,12 +36,16 @@ const listContracts = async (req, res) => {
         ])
 
         return res.status(200).json({
+            success: true,
             data: contracts,
             meta: { page: pageNum, limit: limitNum, total }
         })
 
     } catch (err) {
-        res.status(500).json({ err: err.message });
+        return res.status(500).json({
+            success: false,
+            error: { code: 'SERVER_ERROR', message: err.message }
+        })
     }
 }
 
@@ -52,20 +56,32 @@ const showContract = async (req, res) => {
         const foundContract = await Contract.findById(req.params.contractId).populate('client').populate('freelancer').populate('source.job').populate('source.gig')
 
         if (!foundContract) {
-            return res.status(404).json({ err: 'Contract not found' })
+            return res.status(404).json({
+                success: false,
+                error: { code: 'NOT_FOUND', message: 'Contract not found' }
+            })
         }
 
         if (
             foundContract.client.toString() !== userId.toString() &&
             foundContract.freelancer.toString() !== userId.toString()
         ) {
-            return res.status(403).json({ err: 'You are not a participant in this contract.' })
+            return res.status(403).json({
+                success: false,
+                error: { code: 'FORBIDDEN', message: 'You are not a participant in this contract.' }
+            })
         }
 
-        return res.status(200).json(contract)
+        return res.status(200).json({
+            success: true,
+            data: foundContract
+        })
 
     } catch (err) {
-        res.status(500).json({ err: err.message });
+        return res.status(500).json({
+            success: false,
+            error: { code: 'SERVER_ERROR', message: err.message }
+        })
     }
 }
 
@@ -75,15 +91,24 @@ const addMilestone = async (req, res) => {
         const foundContract = await Contract.findById(req.params.contractId)
 
         if (!foundContract) {
-            return res.status(404).json({ err: 'Contract not found' })
+            return res.status(404).json({
+                success: false,
+                error: { code: 'NOT_FOUND', message: 'Contract not found' }
+            })
         }
 
         if (foundContract.client.toString() !== userId.toString()) {
-            return res.status(403).json({ err: 'You do not have permission to create a milestone for this contract.' })
+            return res.status(403).json({
+                success: false,
+                error: { code: 'FORBIDDEN', message: 'You do not have permission to create a milestone for this contract.' }
+            })
         }
 
         if (foundContract.status !== 'active') {
-            return res.status(400).json({ err: `Cannot add a milestone to a ${foundContract.status} contract` })
+            return res.status(422).json({
+                success: false,
+                error: { code: 'INVALID_STATE', message: `Cannot add a milestone to a ${foundContract.status} contract` }
+            })
         }
 
         const milestoneDetails = {
@@ -96,13 +121,19 @@ const addMilestone = async (req, res) => {
 
         foundContract.milestones.push(milestoneDetails)
 
-        foundContract.save()
+        await foundContract.save()
 
-        return res.status(201).json(foundContract)
+        return res.status(201).json({
+            success: true,
+            data: foundContract
+        })
 
 
     } catch (err) {
-        res.status(500).json({ err: err.message });
+        return res.status(500).json({
+            success: false,
+            error: { code: 'SERVER_ERROR', message: err.message }
+        })
     }
 }
 
@@ -112,21 +143,33 @@ const editMilestone = async (req, res) => {
         const foundContract = await Contract.findById(req.params.contractId)
 
         if (!foundContract) {
-            return res.status(404).json({ err: 'Contract not found' })
+            return res.status(404).json({
+                success: false,
+                error: { code: 'NOT_FOUND', message: 'Contract not found' }
+            })
         }
 
         if (foundContract.client.toString() !== userId.toString()) {
-            return res.status(403).json({ err: 'You do not have permission to create a milestone for this contract.' })
+            return res.status(403).json({
+                success: false,
+                error: { code: 'FORBIDDEN', message: 'You do not have permission to edit a milestone for this contract.' }
+            })
         }
 
         const foundMilestone = foundContract.milestones.id(req.params.milestoneId)
 
         if (!foundMilestone) {
-            return res.status(404).json({ err: 'Milestone not found' })
+            return res.status(404).json({
+                success: false,
+                error: { code: 'NOT_FOUND', message: 'Milestone not found' }
+            })
         }
 
         if (foundMilestone.status !== 'pending') {
-            return res.status(400).json({ err: 'You can only edit unfunded milestones. Once funded, the terms are locked in escrow.' })
+            return res.status(422).json({
+                success: false,
+                error: { code: 'ESCROW_LOCKED', message: 'You can only edit unfunded milestones. Once funded, the terms are locked in escrow.' }
+            })
         }
 
         if (req.body.amount && Number(req.body.amount) !== foundMilestone.amount) {
@@ -139,12 +182,18 @@ const editMilestone = async (req, res) => {
         if (req.body.description) foundMilestone.description = req.body.description
         if (req.body.dueDate) foundMilestone.dueDate = req.body.dueDate
 
-        await foundMilestone.save()
+        await foundContract.save()
 
-        return res.status(200).json(foundContract)
+        return res.status(200).json({
+            success: true,
+            data: foundContract
+        })
 
     } catch (err) {
-        res.status(500).json({ err: err.message });
+        return res.status(500).json({
+            success: false,
+            error: { code: 'SERVER_ERROR', message: err.message }
+        })
     }
 }
 
