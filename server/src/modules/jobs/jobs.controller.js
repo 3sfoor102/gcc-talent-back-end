@@ -162,6 +162,9 @@ const updateJob = async (req, res) => {
             return res.status(403).send("Only the owner can edit this Job!");
         }
 
+        if (foundJob.status !== 'open' || foundJob.status !== 'draft') {
+            return res.status(400).json({ err: `Cannot edit this job, due to it being ${foundJob.status}` })
+        }
 
         const updatedJob = await Job.findByIdAndUpdate(req.params.jobId, req.body, { returnDocument: 'after' })
 
@@ -175,6 +178,8 @@ const updateJob = async (req, res) => {
     }
 }
 
+
+
 const deleteJob = async (req, res) => {
     try {
         const foundJob = await Job.findById(req.params.jobId)
@@ -185,6 +190,10 @@ const deleteJob = async (req, res) => {
 
         if (!foundJob.client.equals(req.user._id)) {
             return res.status(403).send("Only the owner can edit this Job!");
+        }
+        
+        if (foundJob.status !== 'draft') {
+            return res.status(400).json({ err: `Cannot edit this job, due to it being ${foundJob.status}` })
         }
 
         const deletedJob = await Job.findByIdAndDelete(req.params.jobId)
