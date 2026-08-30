@@ -1,4 +1,3 @@
-
 const dns = require("node:dns")
 dns.setServers(["8.8.8.8", "1.1.1.1"])
 
@@ -15,6 +14,8 @@ const contractRouter = require('./modules/contracts/contracts.routes.js');
 const jobRoutes = require('./modules/jobs/jobs.routes')
 const contractRoutes = require('./modules/contracts/contracts.routes')
 const userRoutes = require('./modules/users/users.routes')
+const contractRoutes = require('./modules/contracts/contracts.routes')
+
 
 require('dotenv').config()
 const express = require('express')
@@ -78,6 +79,7 @@ app.use('/api/v1/jobs', jobRoutes)
 router.get('/', jobsCTRL.searchAndFilter);
 app.use('/api/v1/contracts', contractRoutes)
 app.use('/api/v1/users', userRoutes)
+app.use('/api/v1/contracts', contractRoutes)
 
 
 
@@ -92,4 +94,5 @@ app.use(errorHandler)
 app.listen(PORT, function () {
     console.log(`The express app is ready on port ${PORT}! ✨✨✨`)
 })
+
 
