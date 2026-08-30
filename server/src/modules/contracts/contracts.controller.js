@@ -6,6 +6,8 @@ const Contract = require('../../models/Contract')
 const listContracts = async (req, res) => {
     try {
 
+        const userId = req.user._id || req.user.id || req.user.userId;
+
         const queryValues = {
             status: req.body.status,
             page: req.body.page || 1,
@@ -13,7 +15,7 @@ const listContracts = async (req, res) => {
         }
 
         const query = {
-            $or: [{ client: req.user._id }, { freelancer: req.user._id }]
+            $or: [{ client: userId }, { freelancer: userId }]
         }
 
         if (queryValues.status) {
@@ -45,6 +47,7 @@ const listContracts = async (req, res) => {
 
 const showContract = async (req, res) => {
     try {
+        const userId = req.user._id || req.user.id || req.user.userId;
 
         const foundContract = await Contract.findById(req.params.contractId).populate('client').populate('freelancer').populate('source.job').populate('source.gig')
 
@@ -53,8 +56,8 @@ const showContract = async (req, res) => {
         }
 
         if (
-            foundContract.client.toString() !== req.user._id.toString() &&
-            foundContract.freelancer.toString() !== req.user._id.toString()
+            foundContract.client.toString() !== userId.toString() &&
+            foundContract.freelancer.toString() !== userId.toString()
         ) {
             return res.status(403).json({ err: 'You are not a participant in this contract.' })
         }
@@ -68,13 +71,14 @@ const showContract = async (req, res) => {
 
 const addMilestone = async (req, res) => {
     try {
+        const userId = req.user._id || req.user.id || req.user.userId;
         const foundContract = await Contract.findById(req.params.contractId)
 
         if (!foundContract) {
             return res.status(404).json({ err: 'Contract not found' })
         }
 
-        if (foundContract.client.toString() !== req.user._id.toString()) {
+        if (foundContract.client.toString() !== userId.toString()) {
             return res.status(403).json({ err: 'You do not have permission to create a milestone for this contract.' })
         }
 
@@ -104,13 +108,14 @@ const addMilestone = async (req, res) => {
 
 const editMilestone = async (req, res) => {
     try {
+        const userId = req.user._id || req.user.id || req.user.userId;
         const foundContract = await Contract.findById(req.params.contractId)
 
         if (!foundContract) {
             return res.status(404).json({ err: 'Contract not found' })
         }
 
-        if (foundContract.client.toString() !== req.user._id.toString()) {
+        if (foundContract.client.toString() !== userId.toString()) {
             return res.status(403).json({ err: 'You do not have permission to create a milestone for this contract.' })
         }
 
