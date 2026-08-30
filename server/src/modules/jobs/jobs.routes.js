@@ -18,4 +18,6 @@ router.delete('/:jobId', authenticate, authorize('client'), jobsCTRL.deleteJob)
 router.post('/:jobId/close', authenticate, authorize('client'), jobsCTRL.changeStatus)
 router.post('/:jobId/reopen', authenticate, authorize('client'), jobsCTRL.changeStatus)
 
+router.get('/', jobsCTRL.searchAndFilter)
+
 module.exports = router
