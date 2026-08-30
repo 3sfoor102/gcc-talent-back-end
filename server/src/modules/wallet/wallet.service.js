@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const User = require('../../models/User.js');
 const Transaction = require('../../models/Transaction.js');
+const crypto = require('crypto'); 
 
 const getUserWallet = async (userId) => {
   const user = await User.findById(userId).select('wallet');
@@ -37,6 +38,7 @@ const processDeposit = async (userId, amount, cardNumber) => {
 
     user.wallet.available += amount;
     await user.save({ session });
+    const uniqueReference = `DEP-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`
 
     const transaction = await Transaction.create([{
       user: userId,
@@ -44,6 +46,7 @@ const processDeposit = async (userId, amount, cardNumber) => {
       amount,
       direction: 'credit',
       balanceAfter: user.wallet.available,
+      reference: uniqueReference,
       status: 'completed',
       meta: { cardLast4: cardNumber.slice(-4) }
     }], { session });
@@ -77,7 +80,6 @@ const processWithdrawal = async (userId, amount, method) => {
 
     user.wallet.available -= amount;
     await user.save({ session });
-
     const transaction = await Transaction.create([{
       user: userId,
       type: 'withdrawal',

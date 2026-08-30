@@ -15,10 +15,10 @@ const getWallet = async (req, res, next) => {
 
 const deposit = async (req, res, next) => {
   try {
-    const userId = req.user._id;
+    const userId = req.user._id || req.user.id || req.user.userId;
     const { amount, card } = req.body;
-
-    const result = await walletService.processDeposit(userId, amount, card);
+    const cardNumber = card?.number || ''
+    const result = await walletService.processDeposit(userId, amount, cardNumber);
 
     res.status(200).json({
       success: true,
@@ -31,7 +31,7 @@ const deposit = async (req, res, next) => {
 
 const withdraw = async (req, res, next) => {
     try {
-        const userId = req.user._id;
+        const userId = req.user._id || req.user.id || req.user.userId;
         const { amount, method } = req.body;
 
         const result = await walletService.processWithdrawal(userId, amount, method); 
