@@ -1,8 +1,7 @@
-const jobController = require('./jobs.controller')
+const express = require('express')
+const router = express.Router()
+const jobsCTRL = require('../controllers/jobs.controller')
 
-// might need to reuqire the verify-token middleware!
-// const verifyToken = require('./middleware/verify-token')
-// app.use(verifyToken)
+router.get('/', jobsCTRL.searchAndFilter)
 
-
-app.get('/jobs', jobController.indexJob)
+module.exports = router
