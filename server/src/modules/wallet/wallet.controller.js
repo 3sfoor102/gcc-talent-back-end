@@ -1,8 +1,7 @@
 const walletService = require('./wallet.service.js');
-const User = require('../../models/User.js')
 const getWallet = async (req, res, next) => {
     try {
-        const userId = req.user._id;
+        const userId = req.user._id || req.user.id || req.user.userId
         const result = await walletService.getUserWallet(userId);
 
         res.status(200).json({

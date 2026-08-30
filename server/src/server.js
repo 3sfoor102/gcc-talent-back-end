@@ -2,7 +2,7 @@ const dns = require("node:dns")
 dns.setServers(["8.8.8.8", "1.1.1.1"])
 
 const errorHandler = require('./middleware/errorHandler')
-const verifyToken = require('./middleware/verify-token.js')
+const verifyToken = require('./middleware/verify-token')
 const authCtrl = require('./modules/auth/auth.controller')
 const profileCtrl = require('./modules/profile/profile.controller')
 const notificationCtrl = require('./modules/notification/notification.controller')
