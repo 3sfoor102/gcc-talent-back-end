@@ -61,7 +61,7 @@ const searchAndFilter = async (req, res) => {
             Job.find(query)
                 .populate('client')
                 .populate('category')
-                .sort(sort)
+                .sort(queryValues.sort)
                 .skip(skip)
                 .limit(limitNum),
             Job.countDocuments(query)
