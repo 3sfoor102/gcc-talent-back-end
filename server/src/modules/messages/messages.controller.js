@@ -1,5 +1,5 @@
 const Conversation = require('../../models/Conversation')
-const Message = require('../../models/Message  ')
+const Message = require('../../models/Message')
 
 const startConversation = async (req, res) => {
     try {
@@ -25,7 +25,7 @@ const startConversation = async (req, res) => {
             return res.status(200).json(foundConversation)
         }
 
-        newConversation = await Conversation.create({
+        const newConversation = await Conversation.create({
             participants: [req.user._id, recipientId],
             context: context || {},
             unread: 0
@@ -41,9 +41,9 @@ const startConversation = async (req, res) => {
 const getConversations = async (req, res) => {
     try {
         const conversations = await Conversation.find({ participants: req.user._id })
-            .populate('participants')
-            .populate('context.job')
-            .populate('context.contract')
+            .populate('participants', 'name avatarUrl role country ratingAvg')
+            .populate('context.job', 'title')
+            .populate('context.contract', 'title')
             .sort('-updatedAt')
 
         return res.status(200).json({
@@ -77,7 +77,7 @@ const getMessages = async (req, res) => {
 
         const [messages, total] = await Promise.all([
             Message.find({ conversation: req.params.conversationId })
-                .populate('sender')
+                .populate('sender', 'name avatarUrl role')
                 .sort('createdAt')
                 .skip(skip)
                 .limit(limitNum),
