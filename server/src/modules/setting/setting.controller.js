@@ -47,5 +47,5 @@ const updateSetting = async function (req, res, next)
 
 module.exports = {
     getSettings,
-    updateSetting
+    updateSetting,
 }
