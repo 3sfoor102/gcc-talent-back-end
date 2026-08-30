@@ -1,4 +1,4 @@
-router.get('/', jobsCTRL.searchAndFilter);
+
 const dns = require("node:dns")
 dns.setServers(["8.8.8.8", "1.1.1.1"])
 
@@ -12,6 +12,7 @@ const settingCtrl = require('./modules/setting/setting.controller')
 
 const walletRouter = require('./modules/wallet/wallet.routes.js');
 const contractRouter = require('./modules/contracts/contracts.routes.js');
+const jobRoutes = require('./modules/jobs/jobs.routes')
 
 require('dotenv').config()
 const express = require('express')
@@ -56,6 +57,20 @@ app.put('/settings', verifyToken, settingCtrl.updateSetting)
 
 app.use('/api/v1/wallet', walletRouter);
 app.use('/api/v1/contracts', contractRouter);
+
+
+
+
+
+
+app.use('/api/v1/jobs', jobRoutes)
+router.get('/', jobsCTRL.searchAndFilter);
+
+
+
+
+
+
 
 app.use(errorHandler)
 
