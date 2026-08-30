@@ -15,6 +15,7 @@ const jobRoutes = require('./modules/jobs/jobs.routes')
 const contractRoutes = require('./modules/contracts/contracts.routes')
 const userRoutes = require('./modules/users/users.routes')
 const contractRoutes = require('./modules/contracts/contracts.routes')
+const messageRoutes = require('./modules/messages/messages.routes')
 
 
 require('dotenv').config()
@@ -80,6 +81,7 @@ router.get('/', jobsCTRL.searchAndFilter);
 app.use('/api/v1/contracts', contractRoutes)
 app.use('/api/v1/users', userRoutes)
 app.use('/api/v1/contracts', contractRoutes)
+app.use('/api/v1/conversations', messageRoutes)
 
 
 
@@ -94,5 +96,4 @@ app.use(errorHandler)
 app.listen(PORT, function () {
     console.log(`The express app is ready on port ${PORT}! ✨✨✨`)
 })
-
 
