@@ -49,32 +49,35 @@ const clientJobs = async (req, res) => {
 const createJob = async (req, res) => {
     try {
 
-        selectedCategory = await Category.find({ name: req.body.category })
-
+        let selectedCategoryId = null
         if (req.body.category) {
-            selectedSkill = await Skill.find({ name: req.body.category })
+            const selectedCategory = await Category.findOne({ name: req.body.category })
+            selectedCategoryId = selectedCategory ? selectedCategory._id : null
         }
 
-        toUpload = {
+        let selectedSkillId = null
+        if (req.body.skills) {
+            const selectedSkill = await Skill.findOne({ name: req.body.skills })
+            selectedSkillId = selectedSkill ? selectedSkill._id : null
+        }
+        const toUpload = {
             client: req.user._id,
             title: req.body.title,
             description: req.body.description,
-            category: selectedCategory._id,
-            skills: selectedSkill._id,
+            category: selectedCategoryId,
+            skills: selectedSkillId ? [selectedSkillId] : [],
             budgetType: req.body.budgetType,
             budgetMin: req.body.budgetMin,
             budgetMax: req.body.budgetMax,
             experienceLevel: req.body.experienceLevel,
             duration: req.body.duration,
             deadline: req.body.deadline,
-            // Attachment here!
-            status: req.body.status
+            status: req.body.status || 'open'
         }
 
         const newJob = await Job.create(toUpload)
 
-        req.status(201).json(newJob)
-
+        return res.status(201).json(newJob);
 
     } catch (err) {
         res.status(500).json({ err: err.message });
@@ -95,14 +98,14 @@ const updateJob = async (req, res) => {
             return res.status(403).send("Only the owner can edit this Job!");
         }
 
-        if (foundJob.status !== 'open' || foundJob.status !== 'draft') {
+        if (foundJob.status !== 'open' && foundJob.status !== 'draft') {
             return res.status(400).json({ err: `Cannot edit this job, due to it being ${foundJob.status}` })
         }
 
         const updatedJob = await Job.findByIdAndUpdate(req.params.jobId, req.body, { returnDocument: 'after' })
 
 
-        res.status(200).json(updateJob)
+        return res.status(200).json(updatedJob)
 
 
     } catch (err) {
@@ -122,13 +125,13 @@ const deleteJob = async (req, res) => {
         if (!foundJob.client.equals(req.user._id)) {
             return res.status(403).send("Only the owner can edit this Job!");
         }
-        
+
         if (foundJob.status !== 'draft') {
             return res.status(400).json({ err: `Cannot edit this job, due to it being ${foundJob.status}` })
         }
 
         const deletedJob = await Job.findByIdAndDelete(req.params.jobId)
-        res.status(200).json(deleteJob);
+        return res.status(200).json(deletedJob);
 
     } catch (err) {
         res.status(500).json({ err: err.message });
@@ -153,7 +156,7 @@ const changeStatus = async (req, res) => {
         const updatedJob = await Job.findByIdAndUpdate(req.params.jobId, updateStatus, { returnDocument: 'after' })
 
 
-        res.status(200).json(updateJob)
+        return res.status(200).json(updatedJob)
 
 
     } catch (err) {
