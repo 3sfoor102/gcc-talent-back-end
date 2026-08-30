@@ -1,18 +1,22 @@
 const Conversation = require('../../models/Conversation')
-const Message = require('../../models/Message  ')
+const Message = require('../../models/Message')
 
 const startConversation = async (req, res) => {
     try {
+        const userId = req.user._id || req.user.id || req.user.userId;
 
         const recipientId = req.body.recipientId
         const context = req.body.context
 
         if (!recipientId) {
-            return res.status(400).json({ err: 'Recipient ID is required.' })
+            return res.status(400).json({
+                success: false,
+                error: { code: 'VALIDATION_ERROR', message: 'Recipient ID is required.' }
+            })
         }
 
         const existingQuery = {
-            participants: { $all: [req.user._id, recipientId] }
+            participants: { $all: [userId, recipientId] }
         };
 
         if (context?.job) existingQuery['context.job'] = context.job
@@ -22,90 +26,119 @@ const startConversation = async (req, res) => {
         let foundConversation = await Conversation.findOne(existingQuery)
 
         if (foundConversation) {
-            return res.status(200).json(foundConversation)
+            return res.status(200).json({
+                success: true,
+                data: foundConversation
+            })
         }
 
-        newConversation = await Conversation.create({
-            participants: [req.user._id, recipientId],
+        const newConversation = await Conversation.create({
+            participants: [userId, recipientId],
             context: context || {},
             unread: 0
         })
 
-        return res.status(201).json(newConversation)
+        return res.status(201).json({
+            success: true,
+            data: newConversation
+        })
 
     } catch (err) {
-        res.status(500).json({ err: err.message })
+        return res.status(500).json({
+            success: false,
+            error: { code: 'SERVER_ERROR', message: err.message }
+        })
     }
 }
 
 const getConversations = async (req, res) => {
     try {
-        const conversations = await Conversation.find({ participants: req.user._id })
-            .populate('participants')
-            .populate('context.job')
-            .populate('context.contract')
+        const userId = req.user._id || req.user.id || req.user.userId;
+        const conversations = await Conversation.find({ participants: userId })
+            .populate('participants', 'name avatarUrl role country ratingAvg')
+            .populate('context.job', 'title')
+            .populate('context.contract', 'title')
             .sort('-updatedAt')
 
         return res.status(200).json({
+            success: true,
             data: conversations,
             meta: { total: conversations.length }
         })
 
     } catch (err) {
-        res.status(500).json({ err: err.message })
+        return res.status(500).json({
+            success: false,
+            error: { code: 'SERVER_ERROR', message: err.message }
+        })
     }
 }
 
 const getMessages = async (req, res) => {
     try {
+        const userId = req.user._id || req.user.id || req.user.userId;
 
-        const page = req.query.page || 1
-        const limit = req.query.limit || 50
+        const page = parseInt(req.query.page, 10) || 1
+        const limit = parseInt(req.query.limit, 10) || 50
+        const skip = (page - 1) * limit
 
         const foundConversation = await Conversation.findById(req.params.conversationId)
         if (!foundConversation) {
-            return res.status(404).json({ err: 'Conversation not found' })
+            return res.status(404).json({
+                success: false,
+                error: { code: 'NOT_FOUND', message: 'Conversation not found' }
+            })
         }
 
-        if (!foundConversation.participants.includes(req.user._id.toString())) {
-            return res.status(403).json({ err: 'You are not a participant in this conversation.' })
+        if (!foundConversation.participants.includes(userId.toString())) {
+            return res.status(403).json({
+                success: false,
+                error: { code: 'FORBIDDEN', message: 'You are not a participant in this conversation.' }
+            })
         }
-
-        const pageNum = parseInt(page, 10)
-        const limitNum = parseInt(limit, 10)
-        const skip = (pageNum - 1) * limitNum
 
         const [messages, total] = await Promise.all([
             Message.find({ conversation: req.params.conversationId })
-                .populate('sender')
+                .populate('sender', 'name avatarUrl role')
                 .sort('createdAt')
                 .skip(skip)
-                .limit(limitNum),
+                .limit(limit),
             Message.countDocuments({ conversation: req.params.conversationId })
         ])
 
         return res.status(200).json({
+            success: true,
             data: messages,
-            meta: { page: pageNum, limit: limitNum, total }
+            meta: { page, limit, total }
         })
 
     } catch (err) {
-        res.status(500).json({ err: err.message })
+        return res.status(500).json({
+            success: false,
+            error: { code: 'SERVER_ERROR', message: err.message }
+        })
     }
 }
 
 const sendMessage = async (req, res) => {
     try {
 
+        const userId = req.user._id || req.user.id || req.user.userId;
         const text = req.body.text
 
         const foundConversation = await Conversation.findById(req.params.conversationId);
         if (!foundConversation) {
-            return res.status(404).json({ err: 'Conversation not found' })
+            return res.status(404).json({
+                success: false,
+                error: { code: 'NOT_FOUND', message: 'Conversation not found' }
+            })
         }
 
-        if (!foundConversation.participants.includes(req.user._id.toString())) {
-            return res.status(403).json({ err: 'You are not a participant in this conversation.' })
+        if (!foundConversation.participants.includes(userId.toString())) {
+            return res.status(403).json({
+                success: false,
+                error: { code: 'FORBIDDEN', message: 'You are not a participant in this conversation.' }
+            })
         }
 
         let attachments = [];
@@ -117,20 +150,23 @@ const sendMessage = async (req, res) => {
         }
 
         if (!text && attachments.length === 0) {
-            return res.status(400).json({ err: 'Message must contain text or an attachment.' })
+            return res.status(400).json({
+                success: false,
+                error: { code: 'VALIDATION_ERROR', message: 'Message must contain text or an attachment.' }
+            })
         }
 
         const newMessage = await Message.create({
             conversation: req.params.conversationId,
-            sender: req.user._id,
+            sender: userId,
             text,
             attachments,
-            readBy: [req.user._id]
+            readBy: [userId]
         })
 
         foundConversation.lastMessage = {
             text: text || 'Sent an attachment',
-            sender: req.user._id,
+            sender: userId,
             at: Date.now()
         }
 
@@ -138,36 +174,53 @@ const sendMessage = async (req, res) => {
 
         await foundConversation.save()
 
-        return res.status(201).json(newMessage)
-
+        return res.status(201).json({
+            success: true,
+            data: newMessage
+        })
     } catch (err) {
-        res.status(500).json({ err: err.message })
+        return res.status(500).json({
+            success: false,
+            error: { code: 'SERVER_ERROR', message: err.message }
+        })
     }
 }
 
 const markAsRead = async (req, res) => {
     try {
+        const userId = req.user._id || req.user.id || req.user.userId;
         const foundConversation = await Conversation.findById(req.params.conversationId)
         if (!foundConversation) {
-            return res.status(404).json({ err: 'Conversation not found' })
+            return res.status(404).json({
+                success: false,
+                error: { code: 'NOT_FOUND', message: 'Conversation not found' }
+            })
         }
 
-        if (!foundConversation.participants.includes(req.user._id.toString())) {
-            return res.status(403).json({ err: 'You are not a participant in this conversation.' })
+        if (!foundConversation.participants.includes(userId.toString())) {
+            return res.status(403).json({
+                success: false,
+                error: { code: 'FORBIDDEN', message: 'You are not a participant in this conversation.' }
+            })
         }
 
         await Message.updateMany(
-            { conversation: req.params.conversationId, readBy: { $ne: req.user._id } },
-            { $push: { readBy: req.user._id } }
+            { conversation: req.params.conversationId, readBy: { $ne: userId } },
+            { $push: { readBy: userId } }
         )
 
         foundConversation.unread = 0
         await foundConversation.save()
 
-        return res.status(200).json(foundConversation)
-
+        return res.status(200).json({
+            success: true,
+            data: foundConversation
+        })
     } catch (err) {
-        res.status(500).json({ err: err.message })
+        return res.status(500).json({
+            success: false,
+            error: { code: 'SERVER_ERROR', message: err.message }
+        })
     }
 }
 
