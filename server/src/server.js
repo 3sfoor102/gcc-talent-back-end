@@ -13,6 +13,8 @@ const settingCtrl = require('./modules/setting/setting.controller')
 const walletRouter = require('./modules/wallet/wallet.routes.js');
 const contractRouter = require('./modules/contracts/contracts.routes.js');
 const jobRoutes = require('./modules/jobs/jobs.routes')
+const contractRoutes = require('./modules/contracts/contracts.routes')
+const userRoutes = require('./modules/users/users.routes')
 
 require('dotenv').config()
 const express = require('express')
@@ -38,6 +40,7 @@ app.get('/', function (req, res) {
     res.send('GCC Talent API is running!')
 })
 
+// Ali Saleh's Routes
 app.post('/auth/register', authCtrl.register)
 app.post('/auth/login', authCtrl.login)
 app.get('/auth/verify', verifyToken, authCtrl.verify)
@@ -55,6 +58,11 @@ app.get('/settings', verifyToken, settingCtrl.getSettings)
 app.put('/settings', verifyToken, settingCtrl.updateSetting)
 
 
+
+
+
+
+// Alasfoor Routes
 app.use('/api/v1/wallet', walletRouter);
 app.use('/api/v1/contracts', contractRouter);
 
@@ -63,8 +71,15 @@ app.use('/api/v1/contracts', contractRouter);
 
 
 
+
+
+// Hasan's Routes
 app.use('/api/v1/jobs', jobRoutes)
 router.get('/', jobsCTRL.searchAndFilter);
+app.use('/api/v1/contracts', contractRoutes)
+app.use('/api/v1/users', userRoutes)
+
+
 
 
 
@@ -77,3 +92,4 @@ app.use(errorHandler)
 app.listen(PORT, function () {
     console.log(`The express app is ready on port ${PORT}! ✨✨✨`)
 })
+
