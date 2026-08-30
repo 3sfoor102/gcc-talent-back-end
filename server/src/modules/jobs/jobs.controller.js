@@ -31,8 +31,9 @@ const showJob = async (req, res) => {
 
 const clientJobs = async (req, res) => {
     try {
+        const userId = req.user._id || req.user.id || req.user.userId;
 
-        const foundJobs = await Job.find({ client: req.user._id })
+        const foundJobs = await Job.find({ client: userId })
 
         if (!foundJobs) {
             return res.status(404).json({ err: "No jobs were found" });
@@ -49,6 +50,7 @@ const clientJobs = async (req, res) => {
 const createJob = async (req, res) => {
     try {
 
+        const userId = req.user._id || req.user.id || req.user.userId;
         let selectedCategoryId = null
         if (req.body.category) {
             const selectedCategory = await Category.findOne({ name: req.body.category })
@@ -61,7 +63,7 @@ const createJob = async (req, res) => {
             selectedSkillId = selectedSkill ? selectedSkill._id : null
         }
         const toUpload = {
-            client: req.user._id,
+            client: userId,
             title: req.body.title,
             description: req.body.description,
             category: selectedCategoryId,
@@ -87,6 +89,7 @@ const createJob = async (req, res) => {
 
 const updateJob = async (req, res) => {
     try {
+        const userId = req.user._id || req.user.id || req.user.userId;
         const foundJob = await Job.findById(req.params.jobId)
 
         if (!foundJob) {
@@ -94,7 +97,7 @@ const updateJob = async (req, res) => {
         }
 
 
-        if (!foundJob.client.equals(req.user._id)) {
+        if (!foundJob.client.equals(userId)) {
             return res.status(403).send("Only the owner can edit this Job!");
         }
 
@@ -116,13 +119,14 @@ const updateJob = async (req, res) => {
 
 const deleteJob = async (req, res) => {
     try {
+        const userId = req.user._id || req.user.id || req.user.userId;
         const foundJob = await Job.findById(req.params.jobId)
 
         if (!foundJob) {
             return res.status(404).json({ err: "Job not found" });
         }
 
-        if (!foundJob.client.equals(req.user._id)) {
+        if (!foundJob.client.equals(userId)) {
             return res.status(403).send("Only the owner can edit this Job!");
         }
 
@@ -140,6 +144,7 @@ const deleteJob = async (req, res) => {
 
 const changeStatus = async (req, res) => {
     try {
+        const userId = req.user._id || req.user.id || req.user.userId;
         const foundJob = await Job.findById(req.params.jobId)
 
         if (!foundJob) {
@@ -147,7 +152,7 @@ const changeStatus = async (req, res) => {
         }
 
 
-        if (!foundJob.client.equals(req.user._id)) {
+        if (!foundJob.client.equals(userId)) {
             return res.status(403).send("Only the owner can edit this Job!");
         }
 
