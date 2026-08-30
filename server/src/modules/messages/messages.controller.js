@@ -3,6 +3,7 @@ const Message = require('../../models/Message')
 
 const startConversation = async (req, res) => {
     try {
+        const userId = req.user._id || req.user.id || req.user.userId;
 
         const recipientId = req.body.recipientId
         const context = req.body.context
@@ -12,7 +13,7 @@ const startConversation = async (req, res) => {
         }
 
         const existingQuery = {
-            participants: { $all: [req.user._id, recipientId] }
+            participants: { $all: [userId, recipientId] }
         };
 
         if (context?.job) existingQuery['context.job'] = context.job
@@ -26,7 +27,7 @@ const startConversation = async (req, res) => {
         }
 
         const newConversation = await Conversation.create({
-            participants: [req.user._id, recipientId],
+            participants: [userId, recipientId],
             context: context || {},
             unread: 0
         })
@@ -40,7 +41,8 @@ const startConversation = async (req, res) => {
 
 const getConversations = async (req, res) => {
     try {
-        const conversations = await Conversation.find({ participants: req.user._id })
+        const userId = req.user._id || req.user.id || req.user.userId;
+        const conversations = await Conversation.find({ participants: userId })
             .populate('participants', 'name avatarUrl role country ratingAvg')
             .populate('context.job', 'title')
             .populate('context.contract', 'title')
@@ -58,6 +60,7 @@ const getConversations = async (req, res) => {
 
 const getMessages = async (req, res) => {
     try {
+        const userId = req.user._id || req.user.id || req.user.userId;
 
         const page = req.query.page || 1
         const limit = req.query.limit || 50
@@ -67,7 +70,7 @@ const getMessages = async (req, res) => {
             return res.status(404).json({ err: 'Conversation not found' })
         }
 
-        if (!foundConversation.participants.includes(req.user._id.toString())) {
+        if (!foundConversation.participants.includes(userId.toString())) {
             return res.status(403).json({ err: 'You are not a participant in this conversation.' })
         }
 
@@ -97,6 +100,7 @@ const getMessages = async (req, res) => {
 const sendMessage = async (req, res) => {
     try {
 
+        const userId = req.user._id || req.user.id || req.user.userId;
         const text = req.body.text
 
         const foundConversation = await Conversation.findById(req.params.conversationId);
@@ -104,7 +108,7 @@ const sendMessage = async (req, res) => {
             return res.status(404).json({ err: 'Conversation not found' })
         }
 
-        if (!foundConversation.participants.includes(req.user._id.toString())) {
+        if (!foundConversation.participants.includes(userId.toString())) {
             return res.status(403).json({ err: 'You are not a participant in this conversation.' })
         }
 
@@ -122,15 +126,15 @@ const sendMessage = async (req, res) => {
 
         const newMessage = await Message.create({
             conversation: req.params.conversationId,
-            sender: req.user._id,
+            sender: userId,
             text,
             attachments,
-            readBy: [req.user._id]
+            readBy: [userId]
         })
 
         foundConversation.lastMessage = {
             text: text || 'Sent an attachment',
-            sender: req.user._id,
+            sender: userId,
             at: Date.now()
         }
 
@@ -147,18 +151,19 @@ const sendMessage = async (req, res) => {
 
 const markAsRead = async (req, res) => {
     try {
+        const userId = req.user._id || req.user.id || req.user.userId;
         const foundConversation = await Conversation.findById(req.params.conversationId)
         if (!foundConversation) {
             return res.status(404).json({ err: 'Conversation not found' })
         }
 
-        if (!foundConversation.participants.includes(req.user._id.toString())) {
+        if (!foundConversation.participants.includes(userId.toString())) {
             return res.status(403).json({ err: 'You are not a participant in this conversation.' })
         }
 
         await Message.updateMany(
-            { conversation: req.params.conversationId, readBy: { $ne: req.user._id } },
-            { $push: { readBy: req.user._id } }
+            { conversation: req.params.conversationId, readBy: { $ne: userId } },
+            { $push: { readBy: userId } }
         )
 
         foundConversation.unread = 0
