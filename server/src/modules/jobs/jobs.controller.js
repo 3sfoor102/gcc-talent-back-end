@@ -4,161 +4,334 @@ const Skill = require('../../models/Skill')
 
 const indexJob = async (req, res) => {
     try {
-        const jobs = await Job.find()
+        const page = parseInt(req.query.page, 10) || 1
+        const limit = parseInt(req.query.limit, 10) || 12
+        const skip = (page - 1) * limit
 
-        res.status(200).json(jobs)
+        const query = { status: 'open', isHidden: { $ne: true } }
+
+        const [jobs, total] = await Promise.all([
+            Job.find(query).skip(skip).limit(limit).sort('-createdAt'),
+            Job.countDocuments(query)
+        ])
+
+        return res.status(200).json({
+            success: true,
+            data: jobs,
+            meta: {
+                page,
+                limit,
+                total
+            }
+        })
 
     } catch (err) {
-        res.status(500).json({ err: err.message });
-
+        return res.status(500).json({
+            success: false,
+            error: { code: 'SERVER_ERROR', message: err.message }
+        })
     }
 }
 
-
-
-const showJob = async (req, res) => {
+const searchAndFilter = async (req, res) => {
     try {
 
-        const foundjob = await Job.findById(req.params.jobId)
-
-        if (!foundjob) {
-            return res.status(404).json({ err: "Job not found" });
+        const queryValues = {
+            q: req.query.q,
+            category: req.query.category,
+            skills: req.query.skills,
+            budgetType: req.query.budgetType,
+            minBudget: req.query.minBudget,
+            maxBudget: req.query.maxBudget,
+            experienceLevel: req.query.experienceLevel,
+            page: req.query.page || 1,
+            limit: req.query.limit || 12,
+            sort: req.query.sort || '-createdAt',
         }
-        res.status(200).json(foundjob);
+
+        const query = {
+            status: 'open',
+            isHidden: { $ne: true }
+        }
+
+        if (queryValues.q) {
+            query.$text = { $search: queryValues.q }
+        }
+        if (queryValues.category) query.category = queryValues.category
+        if (queryValues.budgetType) query.budgetType = queryValues.budgetType
+        if (queryValues.experienceLevel) query.experienceLevel = queryValues.experienceLevel
+        
+        if (queryValues.skills) {
+            query.skills = { $in: queryValues.skills.split(',') }
+        }
+
+        if (queryValues.minBudget || queryValues.maxBudget) {
+            query.budgetMin = {}
+            if (queryValues.minBudget) query.budgetMin.$gte = Number(queryValues.minBudget)
+            if (queryValues.maxBudget) query.budgetMin.$lte = Number(queryValues.maxBudget)
+        }
+
+        const pageNum = parseInt(queryValues.page, 10);
+        const limitNum = parseInt(queryValues.limit, 10);
+        const skip = (pageNum - 1) * limitNum;
+
+
+        const [jobs, total] = await Promise.all([
+            Job.find(query)
+                .populate('client')
+                .populate('category')
+                .sort(queryValues.sort)
+                .skip(skip)
+                .limit(limitNum),
+            Job.countDocuments(query)
+        ])
+
+        return res.status(200).json({
+            data: jobs,
+            meta: { 
+                page: pageNum, 
+                limit: limitNum, 
+                total 
+            }
+        })
 
     } catch (err) {
         res.status(500).json({ err: err.message });
+    }
+}
+
+const showJob = async (req, res) => {
+    try {
+        const userId = req.user ? (req.user._id || req.user.id || req.user.userId) : null
+
+        const foundJob = await Job.findById(req.params.jobId)
+            .populate('client', 'name avatarUrl ratingAvg isCompany')
+            .populate('category')
+            .populate('skills')
+
+        if (!foundJob) {
+            return res.status(404).json({
+                success: false,
+                error: { code: 'NOT_FOUND', message: 'Job not found' }
+            })
+        }
+
+        if ((foundJob.status === 'draft' || foundJob.isHidden) && (!userId || foundJob.client._id.toString() !== userId.toString())) {
+            return res.status(403).json({
+                success: false,
+                error: { code: 'FORBIDDEN', message: 'You do not have permission to view this job.' }
+            })
+        }
+
+        return res.status(200).json({
+            success: true,
+            data: foundJob
+        })
+    } catch (err) {
+        return res.status(500).json({
+            success: false,
+            error: { code: 'SERVER_ERROR', message: err.message }
+        })
     }
 }
 
 const clientJobs = async (req, res) => {
     try {
+        const userId = req.user._id || req.user.id || req.user.userId;
 
-        const foundJobs = await Job.find({ client: req.user._id })
+        const page = parseInt(req.query.page, 10) || 1
+        const limit = parseInt(req.query.limit, 10) || 12
+        const skip = (page - 1) * limit
 
-        if (!foundJobs) {
-            return res.status(404).json({ err: "No jobs were found" });
-        }
+        const statusFilter = req.query.status ? { status: req.query.status } : {}
+        const query = { client: userId, ...statusFilter }
 
+        const [foundJobs, total] = await Promise.all([
+            Job.find(query).skip(skip).limit(limit).sort('-createdAt'),
+            Job.countDocuments(query)
+        ])
 
-        res.status(200).json(foundJobs);
+        return res.status(200).json({
+            success: true,
+            data: foundJobs,
+            meta: { page, limit, total }
+        })
 
     } catch (err) {
-        res.status(500).json({ err: err.message });
+        return res.status(500).json({
+            success: false,
+            error: { code: 'SERVER_ERROR', message: err.message }
+        })
     }
 }
 
 const createJob = async (req, res) => {
     try {
 
-        selectedCategory = await Category.find({ name: req.body.category })
-
+        const userId = req.user._id || req.user.id || req.user.userId;
+        let selectedCategoryId = null
         if (req.body.category) {
-            selectedSkill = await Skill.find({ name: req.body.category })
+            const selectedCategory = await Category.findOne({ name: req.body.category })
+            selectedCategoryId = selectedCategory ? selectedCategory._id : null
         }
 
-        toUpload = {
-            client: req.user._id,
+        let selectedSkillId = null
+        if (req.body.skills) {
+            const selectedSkills = await Skill.find({ name: { $in: req.body.skills } })
+            selectedSkillId = selectedSkills.map(skill => skill._id)
+        }
+
+
+        const toUpload = {
+            client: userId,
             title: req.body.title,
             description: req.body.description,
-            category: selectedCategory._id,
-            skills: selectedSkill._id,
+            category: selectedCategoryId,
+            skills: selectedSkillId || [],
             budgetType: req.body.budgetType,
             budgetMin: req.body.budgetMin,
             budgetMax: req.body.budgetMax,
             experienceLevel: req.body.experienceLevel,
             duration: req.body.duration,
             deadline: req.body.deadline,
-            // Attachment here!
-            status: req.body.status
+            status: req.body.status || 'open'
         }
 
         const newJob = await Job.create(toUpload)
 
-        req.status(201).json(newJob)
-
-
+        return res.status(201).json({
+            success: true,
+            data: newJob
+        })
     } catch (err) {
-        res.status(500).json({ err: err.message });
-
+        return res.status(500).json({
+            success: false,
+            error: { code: 'SERVER_ERROR', message: err.message }
+        })
     }
 }
 
 const updateJob = async (req, res) => {
     try {
+        const userId = req.user._id || req.user.id || req.user.userId;
         const foundJob = await Job.findById(req.params.jobId)
 
         if (!foundJob) {
-            return res.status(404).json({ err: "Job not found" });
+            return res.status(404).json({
+                success: false,
+                error: { code: 'NOT_FOUND', message: 'Job not found' }
+            })
         }
 
 
-        if (!foundJob.client.equals(req.user._id)) {
-            return res.status(403).send("Only the owner can edit this Job!");
+        if (!foundJob.client.equals(userId)) {
+            return res.status(403).json({
+                success: false,
+                error: { code: 'FORBIDDEN', message: 'Only the owner can edit this Job!' }
+            })
         }
 
+        if (foundJob.status !== 'open' && foundJob.status !== 'draft') {
+            return res.status(422).json({
+                success: false,
+                error: { code: 'INVALID_STATE', message: `Cannot edit this job due to it being ${foundJob.status}` }
+            })
+        }
 
-        const updatedJob = await Job.findByIdAndUpdate(req.params.jobId, req.body, { returnDocument: 'after' })
+        const updatedJob = await Job.findByIdAndUpdate(req.params.jobId, req.body, { new: true });
 
-
-        res.status(200).json(updateJob)
-
+        return res.status(200).json({
+            success: true,
+            data: updatedJob
+        })
 
     } catch (err) {
-        res.status(500).json({ err: err.message });
-
+        return res.status(500).json({
+            success: false,
+            error: { code: 'SERVER_ERROR', message: err.message }
+        })
     }
 }
 
 const deleteJob = async (req, res) => {
     try {
+        const userId = req.user._id || req.user.id || req.user.userId;
         const foundJob = await Job.findById(req.params.jobId)
 
         if (!foundJob) {
-            return res.status(404).json({ err: "Job not found" });
+            return res.status(404).json({
+                success: false,
+                error: { code: 'NOT_FOUND', message: 'Job not found' }
+            })
         }
 
-        if (!foundJob.client.equals(req.user._id)) {
-            return res.status(403).send("Only the owner can edit this Job!");
+        if (!foundJob.client.equals(userId)) {
+            return res.status(403).json({
+                success: false,
+                error: { code: 'FORBIDDEN', message: 'Only the owner can delete this Job!' }
+            })
+        }
+
+        if (foundJob.status !== 'draft') {
+            return res.status(422).json({
+                success: false,
+                error: { code: 'INVALID_STATE', message: `Cannot delete this job due to it being ${foundJob.status}` }
+            })
         }
 
         const deletedJob = await Job.findByIdAndDelete(req.params.jobId)
-        res.status(200).json(deleteJob);
-
+        return res.status(200).json({
+            success: true,
+            data: deletedJob
+        })
     } catch (err) {
-        res.status(500).json({ err: err.message });
+        return res.status(500).json({
+            success: false,
+            error: { code: 'SERVER_ERROR', message: err.message }
+        })
     }
 }
 
 const changeStatus = async (req, res) => {
     try {
+        const userId = req.user._id || req.user.id || req.user.userId;
         const foundJob = await Job.findById(req.params.jobId)
 
         if (!foundJob) {
-            return res.status(404).json({ err: "Job not found" });
+            return res.status(404).json({
+                success: false,
+                error: { code: 'NOT_FOUND', message: 'Job not found' }
+            })
         }
 
 
-        if (!foundJob.client.equals(req.user._id)) {
-            return res.status(403).send("Only the owner can edit this Job!");
+        if (!foundJob.client.equals(userId)) {
+            return res.status(403).json({
+                success: false,
+                error: { code: 'FORBIDDEN', message: 'Only the owner can change the status for this Job!' }
+            })
         }
 
         const updateStatus = { status: req.body.status }
 
-        const updatedJob = await Job.findByIdAndUpdate(req.params.jobId, updateStatus , { returnDocument: 'after' })
+        const updatedJob = await Job.findByIdAndUpdate(req.params.jobId, updateStatus, { new: true })
 
-
-        res.status(200).json(updateJob)
-
+        return res.status(200).json({
+            success: true,
+            data: updatedJob
+        })
 
     } catch (err) {
-        res.status(500).json({ err: err.message });
-
+        return res.status(500).json({
+            success: false,
+            error: { code: 'SERVER_ERROR', message: err.message }
+        })
     }
 }
 
 module.exports = {
     indexJob,
+    searchAndFilter,
     showJob,
     clientJobs,
     createJob,
