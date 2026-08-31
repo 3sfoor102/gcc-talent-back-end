@@ -4,38 +4,6 @@ const Skill = require('../../models/Skill')
 
 const indexJob = async (req, res) => {
     try {
-        const page = parseInt(req.query.page, 10) || 1
-        const limit = parseInt(req.query.limit, 10) || 12
-        const skip = (page - 1) * limit
-
-        const query = { status: 'open', isHidden: { $ne: true } }
-
-        const [jobs, total] = await Promise.all([
-            Job.find(query).skip(skip).limit(limit).sort('-createdAt'),
-            Job.countDocuments(query)
-        ])
-
-        return res.status(200).json({
-            success: true,
-            data: jobs,
-            meta: {
-                page,
-                limit,
-                total
-            }
-        })
-
-    } catch (err) {
-        return res.status(500).json({
-            success: false,
-            error: { code: 'SERVER_ERROR', message: err.message }
-        })
-    }
-}
-
-const searchAndFilter = async (req, res) => {
-    try {
-
         const queryValues = {
             q: req.query.q,
             category: req.query.category,
@@ -60,7 +28,7 @@ const searchAndFilter = async (req, res) => {
         if (queryValues.category) query.category = queryValues.category
         if (queryValues.budgetType) query.budgetType = queryValues.budgetType
         if (queryValues.experienceLevel) query.experienceLevel = queryValues.experienceLevel
-        
+
         if (queryValues.skills) {
             query.skills = { $in: queryValues.skills.split(',') }
         }
@@ -75,7 +43,6 @@ const searchAndFilter = async (req, res) => {
         const limitNum = parseInt(queryValues.limit, 10);
         const skip = (pageNum - 1) * limitNum;
 
-
         const [jobs, total] = await Promise.all([
             Job.find(query)
                 .populate('client')
@@ -87,16 +54,20 @@ const searchAndFilter = async (req, res) => {
         ])
 
         return res.status(200).json({
+            success: true,
             data: jobs,
-            meta: { 
-                page: pageNum, 
-                limit: limitNum, 
-                total 
+            meta: {
+                page: pageNum,
+                limit: limitNum,
+                total
             }
         })
 
     } catch (err) {
-        res.status(500).json({ err: err.message });
+        return res.status(500).json({
+            success: false,
+            error: { code: 'SERVER_ERROR', message: err.message }
+        });
     }
 }
 
