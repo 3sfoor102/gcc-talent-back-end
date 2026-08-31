@@ -302,7 +302,6 @@ const changeStatus = async (req, res) => {
 
 module.exports = {
     indexJob,
-    searchAndFilter,
     showJob,
     clientJobs,
     createJob,
