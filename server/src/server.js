@@ -10,11 +10,9 @@ const reportCtrl = require('./modules/report/report.controller')
 const settingCtrl = require('./modules/setting/setting.controller')
 
 const walletRouter = require('./modules/wallet/wallet.routes.js');
-const contractRouter = require('./modules/contracts/contracts.routes.js');
+const contractRouter = require('./modules/contracts/contracts.routes.js')
 const jobRoutes = require('./modules/jobs/jobs.routes')
-const contractRoutes = require('./modules/contracts/contracts.routes')
 const userRoutes = require('./modules/users/users.routes')
-const contractRoutes = require('./modules/contracts/contracts.routes')
 const messageRoutes = require('./modules/messages/messages.routes')
 
 
@@ -77,10 +75,10 @@ app.use('/api/v1/contracts', contractRouter);
 
 // Hasan's Routes
 app.use('/api/v1/jobs', jobRoutes)
-router.get('/', jobsCTRL.searchAndFilter);
-app.use('/api/v1/contracts', contractRoutes)
+// router.get('/', jobsCTRL.searchAndFilter);
+app.use('/api/v1/contracts', contractRouter)
 app.use('/api/v1/users', userRoutes)
-app.use('/api/v1/contracts', contractRoutes)
+app.use('/api/v1/contracts', contractRouter)
 app.use('/api/v1/conversations', messageRoutes)
 
 

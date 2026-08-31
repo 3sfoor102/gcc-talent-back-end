@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const contractsController = require('../controllers/contracts.controller.js');
-const { createReview } = require('../controllers/reviews.controller.js');
+const contractsController = require('./contracts.controller.js');
+// const { createReview } = require('../contracts/');
 const verifyToken = require('../../middleware/verify-token.js');
 const authorize = require('../../middleware/authorize.js');
 
@@ -18,6 +18,6 @@ router.post('/:id/milestones/:mid/approve', authorize('client'), contractsContro
 
 router.post('/:id/milestones/:mid/deliver', authorize('freelancer'), contractsController.deliverMilestone);
 
-router.post('/:id/reviews', createReview);
+router.post('/:id/reviews', contractsController.createReview);
 
 module.exports = router;
