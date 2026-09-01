@@ -6,13 +6,13 @@ const proposalSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Job',
       required: true,
-      index: true, // Speeds up queries when a client loads proposals for their job
+      index: true,
     },
     freelancer: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: true,
-      index: true, // Speeds up queries when a freelancer looks at their active bids
+      index: true,
     },
     coverLetter: {
       type: String,
@@ -26,7 +26,6 @@ const proposalSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
-    // Freelancers can optionally suggest how to break down the payment
     milestones: [
       {
         title: String,
@@ -34,11 +33,12 @@ const proposalSchema = new mongoose.Schema(
         dueDate: Date,
       },
     ],
-    // Similar to the Message and Job models, files are kept off-server[cite: 2]
     attachments: [
       {
-        url: String,
-        name: String,
+        url: { type: String, required: true },
+        public_id: { type: String },
+        name: { type: String },
+        size: { type: Number },
       },
     ],
     status: {
@@ -51,12 +51,11 @@ const proposalSchema = new mongoose.Schema(
     },
   },
   {
-    timestamps: true, // Automatically adds createdAt and updatedAt[cite: 2]
+    timestamps: true,
   }
 );
 
-// Unique compound index: A freelancer can only submit ONE proposal per job[cite: 2]
 proposalSchema.index({ job: 1, freelancer: 1 }, { unique: true });
 
 const Proposal = mongoose.model('Proposal', proposalSchema);
-module.exports = Proposal
+module.exports = Proposal;

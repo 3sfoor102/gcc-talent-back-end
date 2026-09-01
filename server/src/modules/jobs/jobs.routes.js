@@ -1,10 +1,11 @@
 const express = require('express')
 const router = express.Router()
 
-const  authorize = require('../../middleware/authorize')
-const verifyToken  = require('../../middleware/verify-token')
+const authorize = require('../../middleware/authorize')
+const verifyToken = require('../../middleware/verify-token')
 
 const jobsCTRL = require('./jobs.controller')
+const proposalCTRL = require('../proposals/proposals.controller')
 
 router.get('/', jobsCTRL.indexJob)
 
@@ -21,5 +22,8 @@ router.delete('/:jobId', verifyToken, authorize('client'), jobsCTRL.deleteJob)
 
 router.post('/:jobId/close', verifyToken, authorize('client'), jobsCTRL.changeStatus)
 router.post('/:jobId/reopen', verifyToken, authorize('client'), jobsCTRL.changeStatus)
+
+router.post('/:jobId/proposals', verifyToken, authorize('freelancer'), proposalCTRL.createProposal)
+router.get('/:jobId/proposals', verifyToken, authorize('client'), proposalCTRL.getJobProposals)
 
 module.exports = router
