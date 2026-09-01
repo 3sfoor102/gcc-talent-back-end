@@ -300,6 +300,37 @@ const changeStatus = async (req, res) => {
     }
 }
 
+const getCategories = async (req, res) => {
+    try {
+        const categories = await Category.find({}).sort('name')
+        return res.status(200).json({
+            success: true,
+            data: categories
+        })
+    } catch (err) {
+        return res.status(500).json({
+            success: false,
+            error: { code: 'SERVER_ERROR', message: err.message }
+        })
+    }
+}
+
+const getSkills = async (req, res) => {
+    try {
+        const query = req.query.category ? { category: req.query.category } : {}
+        const skills = await Skill.find(query).sort('name')
+        return res.status(200).json({
+            success: true,
+            data: skills
+        })
+    } catch (err) {
+        return res.status(500).json({
+            success: false,
+            error: { code: 'SERVER_ERROR', message: err.message }
+        })
+    }
+}
+
 module.exports = {
     indexJob,
     showJob,
@@ -308,4 +339,6 @@ module.exports = {
     updateJob,
     deleteJob,
     changeStatus,
+    getCategories,
+    getSkills
 }
