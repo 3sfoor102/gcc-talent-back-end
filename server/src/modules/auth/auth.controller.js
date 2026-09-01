@@ -85,8 +85,45 @@ const verify = async function (req, res, next)
     }
 }
 
+const forgotPassword = async function (req, res, next) {
+    try {
+        const { email } = req.body
+        const resetToken = await authService.forgotPassword(email)
+
+        const resetUrl = `http://localhost:5173/reset-password/${resetToken}`
+
+        console.log(`\n\n🔑 [PASSWORD RESET LINK for ${email}]:\n👉 ${resetUrl}\n\n`)
+
+        res.status(200).json({
+            success: true,
+            message: 'Password reset link generated! Check your server console.'
+        })
+    } catch (err) {
+        res.status(400)
+        next(err)
+    }
+}
+
+const resetPassword = async function (req, res, next) {
+    try {
+        const { token, newPassword } = req.body
+        await authService.resetPassword(token, newPassword)
+
+        res.status(200).json({
+            success: true,
+            message: 'Password has been reset successfully. You can now login.'
+        })
+    } catch (err) {
+        res.status(400)
+        next(err)
+    }
+}
+
 module.exports = {
     register,
     login,
-    verify
+    verify,
+    forgotPassword,
+    resetPassword,
+
 }

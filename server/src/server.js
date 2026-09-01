@@ -8,6 +8,7 @@ const profileCtrl = require('./modules/profile/profile.controller')
 const notificationCtrl = require('./modules/notification/notification.controller')
 const reportCtrl = require('./modules/report/report.controller')
 const settingCtrl = require('./modules/setting/setting.controller')
+const upload = require('./config/multer')
 
 const walletRouter = require('./modules/wallet/wallet.routes.js');
 const contractRouter = require('./modules/contracts/contracts.routes.js')
@@ -15,6 +16,7 @@ const jobRoutes = require('./modules/jobs/jobs.routes')
 const userRoutes = require('./modules/users/users.routes')
 const messageRoutes = require('./modules/messages/messages.routes')
 const proposalsRouter = require('./modules/proposals/proposals.routes.js')
+
 
 require('dotenv').config()
 const express = require('express')
@@ -56,7 +58,9 @@ app.post('/api/v1/reports', verifyToken, reportCtrl.submitReport)
 app.get('/api/v1/reports', verifyToken, reportCtrl.getReports)
 app.get('/api/v1/settings', verifyToken, settingCtrl.getSettings)
 app.put('/api/v1/settings', verifyToken, settingCtrl.updateSetting)
-
+app.put('/api/v1/settings/avatar', verifyToken, upload.single('avatar'), settingCtrl.updateAvatar)
+app.post('/api/v1/auth/forgot-password', authCtrl.forgotPassword)
+app.post('/api/v1/auth/reset-password', authCtrl.resetPassword)
 
 
 

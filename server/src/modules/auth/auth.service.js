@@ -55,8 +55,35 @@ const loginUser = async function (email, password)
     return { user, accessToken }
 }
 
+const forgotPassword = async function (email) {
+    const user = await User.findOne({ email })
+    if (!user) {
+        throw new Error('User not found')
+    }
+    const resetToken = jwt.sign({ id: user._id }, process.env.JWT_ACCESS_SECRET, { expiresIn: '15m' })
+    return resetToken
+}
+
+const resetPassword = async function (token, newPassword) {
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET)
+        const user = await User.findById(decoded.id)
+        if (!user) throw new Error('User not found')
+
+        const salt = await bcrypt.genSalt(10)
+        user.passwordHash = await bcrypt.hash(newPassword, salt)
+        await user.save()
+        
+        return user
+    } catch (err) {
+        throw new Error('Invalid or expired password reset token')
+    }
+}
+
 
 module.exports = {
     registerUser,
-    loginUser
+    loginUser,
+    forgotPassword,
+    resetPassword,
 }
