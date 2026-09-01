@@ -1,6 +1,27 @@
+const mongoose = require('mongoose')
 const Job = require('../../models/Job')
 const Category = require('../../models/Category')
 const Skill = require('../../models/Skill')
+const cloudinary = require('../../config/cloudinary')
+
+const deleteFromCloudinary = async (attachments) => {
+    if (!attachments || attachments.length === 0) {
+        return;
+    }
+
+    for (const file of attachments) {
+        if (file.public_id) {
+            try {
+                const res = await cloudinary.uploader.destroy(file.public_id);
+                if (res.result === 'not found') {
+                    await cloudinary.uploader.destroy(file.public_id, { resource_type: 'raw' });
+                }
+            } catch (err) {
+                console.log("Could not delete from Cloudinary:", err.message);
+            }
+        }
+    }
+}
 
 const indexJob = async (req, res) => {
     try {
@@ -25,12 +46,21 @@ const indexJob = async (req, res) => {
         if (queryValues.q) {
             query.$text = { $search: queryValues.q }
         }
-        if (queryValues.category) query.category = queryValues.category
+        if (queryValues.category) {
+            if (mongoose.Types.ObjectId.isValid(queryValues.category)) {
+                query.category = queryValues.category;
+            } else {
+                const foundCat = await Category.findOne({ name: queryValues.category }).select('_id');
+                if (foundCat) query.category = foundCat._id;
+            }
+        }
         if (queryValues.budgetType) query.budgetType = queryValues.budgetType
         if (queryValues.experienceLevel) query.experienceLevel = queryValues.experienceLevel
 
         if (queryValues.skills) {
-            query.skills = { $in: queryValues.skills.split(',') }
+            const skillNames = queryValues.skills.split(',').map(skill => skill.trim());
+            const matchedSkills = await Skill.find({ name: { $in: skillNames } }).select('_id');
+            query.skills = { $in: matchedSkills.map(skill => skill._id) };
         }
 
         if (queryValues.minBudget || queryValues.maxBudget) {
@@ -45,8 +75,9 @@ const indexJob = async (req, res) => {
 
         const [jobs, total] = await Promise.all([
             Job.find(query)
-                .populate('client')
+                .populate('client', 'name avatarUrl ratingAvg isCompany')
                 .populate('category')
+                .populate('skills')
                 .sort(queryValues.sort)
                 .skip(skip)
                 .limit(limitNum),
@@ -118,7 +149,12 @@ const clientJobs = async (req, res) => {
         const query = { client: userId, ...statusFilter }
 
         const [foundJobs, total] = await Promise.all([
-            Job.find(query).skip(skip).limit(limit).sort('-createdAt'),
+            Job.find(query)
+                .populate('category', 'name')
+                .populate('skills', 'name')
+                .skip(skip)
+                .limit(limit)
+                .sort('-createdAt'),
             Job.countDocuments(query)
         ])
 
@@ -146,10 +182,10 @@ const createJob = async (req, res) => {
             selectedCategoryId = selectedCategory ? selectedCategory._id : null
         }
 
-        let selectedSkillId = null
-        if (req.body.skills) {
+        let selectedSkillIds = null
+        if (req.body.skills && req.body.skills.length > 0) {
             const selectedSkills = await Skill.find({ name: { $in: req.body.skills } })
-            selectedSkillId = selectedSkills.map(skill => skill._id)
+            selectedSkillIds = selectedSkills.map(skill => skill._id)
         }
 
 
@@ -158,13 +194,14 @@ const createJob = async (req, res) => {
             title: req.body.title,
             description: req.body.description,
             category: selectedCategoryId,
-            skills: selectedSkillId || [],
+            skills: selectedSkillIds || [],
             budgetType: req.body.budgetType,
             budgetMin: req.body.budgetMin,
             budgetMax: req.body.budgetMax,
             experienceLevel: req.body.experienceLevel,
             duration: req.body.duration,
             deadline: req.body.deadline,
+            attachments: req.body.attachments || [],
             status: req.body.status || 'open'
         }
 
@@ -209,7 +246,50 @@ const updateJob = async (req, res) => {
             })
         }
 
-        const updatedJob = await Job.findByIdAndUpdate(req.params.jobId, req.body, { new: true });
+        if (req.body.attachments) {
+            const filesToDelete = foundJob.attachments.filter((oldFile) => {
+                const stillExists = req.body.attachments.some(
+                    (newFile) => newFile.public_id === oldFile.public_id
+                );
+                return !stillExists;
+            });
+
+            await deleteFromCloudinary(filesToDelete);
+        }
+
+        let categoryId = foundJob.category
+        if (req.body.category) {
+            const selectedCategory = await Category.findOne({ name: req.body.category })
+            if (selectedCategory) categoryId = selectedCategory._id
+        }
+
+        let skillIds = foundJob.skills
+        if (req.body.skills) {
+            const selectedSkills = await Skill.find({ name: { $in: req.body.skills } })
+            skillIds = selectedSkills.map(skill => skill._id)
+        }
+
+        const updates = {
+            title: req.body.title ?? foundJob.title,
+            description: req.body.description ?? foundJob.description,
+            category: categoryId,
+            skills: skillIds,
+            budgetType: req.body.budgetType ?? foundJob.budgetType,
+            budgetMin: req.body.budgetMin ?? foundJob.budgetMin,
+            budgetMax: req.body.budgetMax ?? foundJob.budgetMax,
+            experienceLevel: req.body.experienceLevel ?? foundJob.experienceLevel,
+            duration: req.body.duration ?? foundJob.duration,
+            deadline: req.body.deadline ?? foundJob.deadline,
+            status: req.body.status ?? foundJob.status,
+            attachments: req.body.attachments ?? foundJob.attachments
+        }
+
+
+        const updatedJob = await Job.findByIdAndUpdate(
+            req.params.jobId,
+            updates,
+            { new: true, runValidators: true }
+        )
 
         return res.status(200).json({
             success: true,
@@ -250,7 +330,10 @@ const deleteJob = async (req, res) => {
             })
         }
 
+        await deleteFromCloudinary(foundJob.attachments);
+
         const deletedJob = await Job.findByIdAndDelete(req.params.jobId)
+
         return res.status(200).json({
             success: true,
             data: deletedJob
