@@ -20,7 +20,7 @@ const freelancerProfileSchema = new mongoose.Schema(
     type: String
   },
 
-  skills: 
+  skills:
   [{
     type: String
   }],

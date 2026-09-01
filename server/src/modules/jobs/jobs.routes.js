@@ -8,6 +8,9 @@ const jobsCTRL = require('./jobs.controller')
 
 router.get('/', jobsCTRL.indexJob)
 
+router.get('/categories', jobsCTRL.getCategories);
+router.get('/skills', jobsCTRL.getSkills);
+
 router.get('/mine', verifyToken, authorize('client'), jobsCTRL.clientJobs)
 router.post('/', verifyToken, authorize('client'), jobsCTRL.createJob)
 

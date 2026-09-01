@@ -22,13 +22,13 @@ const jobSchema = new mongoose.Schema({
         required: true,
         index: true
     },
-    
+
     skills: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Skill',
         index: true
     }],
-    
+
     budgetType: {
         type: String,
         enum: ['fixed', 'hourly'],
@@ -43,11 +43,24 @@ const jobSchema = new mongoose.Schema({
     duration: { type: String },
     deadline: { type: Date },
     attachments: [
-        // chnage to use cloudinary attachments structure
         {
-            url: String,
-            name: String,
-            size: Number
+            url: {
+                type: String,
+                required: true
+            },
+            public_id: {
+                type: String,
+                required: true
+            },
+            name: {
+                type: String
+            },
+            format: {
+                type: String
+            },
+            size: {
+                type: Number
+            }
         }
     ],
     status: {
