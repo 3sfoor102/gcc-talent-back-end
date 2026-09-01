@@ -5,6 +5,7 @@ const authorize = require('../../middleware/authorize')
 const verifyToken = require('../../middleware/verify-token')
 
 const jobsCTRL = require('./jobs.controller')
+const proposalCTRL = require('../proposals/proposals.controller')
 
 router.get('/', jobsCTRL.indexJob)
 
