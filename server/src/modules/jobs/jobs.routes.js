@@ -1,7 +1,8 @@
 const express = require('express')
 const router = express.Router()
 
-const { authenticate, authorize } = require('../../middleware/auth')
+const  authorize = require('../../middleware/authorize')
+const verifyToken  = require('../../middleware/verify-token')
 
 const jobsCTRL = require('./jobs.controller')
 
@@ -15,12 +16,10 @@ router.post('/', authenticate, authorize('client'), jobsCTRL.createJob)
 
 router.get('/:jobId', jobsCTRL.showJob)
 
-router.patch('/:jobId', authenticate, authorize('client'), jobsCTRL.updateJob)
-router.delete('/:jobId', authenticate, authorize('client'), jobsCTRL.deleteJob)
+router.patch('/:jobId', verifyToken, authorize('client'), jobsCTRL.updateJob)
+router.delete('/:jobId', verifyToken, authorize('client'), jobsCTRL.deleteJob)
 
-router.post('/:jobId/close', authenticate, authorize('client'), jobsCTRL.changeStatus)
-router.post('/:jobId/reopen', authenticate, authorize('client'), jobsCTRL.changeStatus)
-
-router.get('/', jobsCTRL.searchAndFilter)
+router.post('/:jobId/close', verifyToken, authorize('client'), jobsCTRL.changeStatus)
+router.post('/:jobId/reopen', verifyToken, authorize('client'), jobsCTRL.changeStatus)
 
 module.exports = router
