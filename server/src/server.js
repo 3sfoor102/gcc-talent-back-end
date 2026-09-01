@@ -64,7 +64,6 @@ app.put('/api/v1/settings/avatar', verifyToken, upload.single('avatar'), setting
 
 
 
-
 // Alasfoor Routes
 app.use('/api/v1/wallet', walletRouter);
 app.use('/api/v1/contracts', contractRouter);
