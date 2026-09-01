@@ -22,8 +22,7 @@ const freelancerProfileSchema = new mongoose.Schema(
 
   skills: 
   [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Skill'
+    type: String
   }],
 
   hourlyRate: 
