@@ -54,7 +54,7 @@ const seedDatabase = async () => {
     for (const cat of categoryData) {
       const newCategory = await Category.create({ name: cat.name, slug: createSlug(cat.name), isFeatured: true });
       savedCategories.push(newCategory);
-      
+
       const skillsToInsert = cat.skills.map(skill => ({
         name: skill, slug: createSlug(skill), category: newCategory._id
       }));
@@ -79,7 +79,7 @@ const seedDatabase = async () => {
 
     const freelancers = [];
     const gccCountries = ['Bahrain', 'Saudi Arabia', 'UAE', 'Kuwait', 'Oman', 'Qatar']; // GCC mix requirement[cite: 2]
-    
+
     for (let i = 1; i <= 20; i++) {
       const freelancer = await User.create({
         name: `Freelancer Demo ${i}`, email: `freelancer${i}@gcctalent.test`, passwordHash: 'Password123!', role: 'freelancer', country: gccCountries[i % gccCountries.length], isEmailVerified: true
@@ -130,7 +130,7 @@ const seedDatabase = async () => {
     for (const job of jobs) {
       const f1 = freelancers[Math.floor(Math.random() * freelancers.length)];
       const f2 = freelancers[Math.floor(Math.random() * freelancers.length)];
-      
+
       if (f1._id !== f2._id) {
         await Proposal.create({ job: job._id, freelancer: f1._id, coverLetter: 'I am perfect for this.', amount: 800, deliveryDays: 14, status: job.status === 'completed' ? 'accepted' : 'pending' });
         await Proposal.create({ job: job._id, freelancer: f2._id, coverLetter: 'I can start today.', amount: 950, deliveryDays: 10, status: job.status === 'completed' ? 'declined' : 'pending' });
