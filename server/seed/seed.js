@@ -1,7 +1,10 @@
+const dns = require("node:dns");
+dns.setServers(["8.8.8.8", "1.1.1.1"]);
+
 const mongoose = require('mongoose');
+const bcrypt = require('bcrypt');
 require('dotenv').config();
 
-// 1. Importing all necessary CommonJS models (Matching your image_68beb8.png)
 const Category = require('../src/models/Category');
 const Skill = require('../src/models/Skill');
 const User = require('../src/models/User');
@@ -20,7 +23,6 @@ const seedDatabase = async () => {
     await mongoose.connect(process.env.MONGODB_URI);
     console.log('Connected successfully. Wiping existing data...');
 
-    // 2. Wipe the database to ensure idempotency (F-GEN-05)[cite: 2]
     await Promise.all([
       Transaction.deleteMany({}),
       Review.deleteMany({}),
@@ -37,7 +39,6 @@ const seedDatabase = async () => {
 
     console.log('Database wiped. Seeding Categories & Skills...');
 
-    // 3. Seed 8-12 Categories and Skills[cite: 2]
     const createSlug = (text) => text.toLowerCase().replace(/[^a-z0-9]+/g, '-');
     const categoryData = [
       { name: 'Web Development', skills: ['React', 'Node.js', 'Express', 'MongoDB', 'HTML/CSS'] },
@@ -63,26 +64,29 @@ const seedDatabase = async () => {
 
     console.log('Seeding 1 Admin, 10 Clients, and 20 Freelancers...');
 
-    // 4. Seed Users (Mandated credentials)[cite: 2]
+    const salt = await bcrypt.genSalt(10);
+    const adminPasswordHashed = await bcrypt.hash('Admin123!', salt);
+    const defaultPasswordHashed = await bcrypt.hash('Password123!', salt);
+
     await User.create({
-      name: 'Platform Admin', email: 'admin@gcctalent.test', passwordHash: 'Admin123!', role: 'admin', isEmailVerified: true
+      name: 'Platform Admin', email: 'admin@gcctalent.test', passwordHash: adminPasswordHashed, role: 'admin', isEmailVerified: true
     });
 
     const clients = [];
     for (let i = 1; i <= 10; i++) {
       const client = await User.create({
-        name: `Client Demo ${i}`, email: `client${i}@gcctalent.test`, passwordHash: 'Password123!', role: 'client', country: 'Bahrain', isEmailVerified: true
+        name: `Client Demo ${i}`, email: `client${i}@gcctalent.test`, passwordHash: defaultPasswordHashed, role: 'client', country: 'Bahrain', isEmailVerified: true
       });
       clients.push(client);
       await ClientProfile.create({ user: client._id, companyName: `Demo Company ${i}`, isCompany: true, description: 'Leading agency looking for top talent.' });
     }
 
     const freelancers = [];
-    const gccCountries = ['Bahrain', 'Saudi Arabia', 'UAE', 'Kuwait', 'Oman', 'Qatar']; // GCC mix requirement[cite: 2]
+    const gccCountries = ['Bahrain', 'Saudi Arabia', 'UAE', 'Kuwait', 'Oman', 'Qatar']; 
 
     for (let i = 1; i <= 20; i++) {
       const freelancer = await User.create({
-        name: `Freelancer Demo ${i}`, email: `freelancer${i}@gcctalent.test`, passwordHash: 'Password123!', role: 'freelancer', country: gccCountries[i % gccCountries.length], isEmailVerified: true
+        name: `Freelancer Demo ${i}`, email: `freelancer${i}@gcctalent.test`, passwordHash: defaultPasswordHashed, role: 'freelancer', country: gccCountries[i % gccCountries.length], isEmailVerified: true
       });
       freelancers.push(freelancer);
       await FreelancerProfile.create({ user: freelancer._id, headline: 'Expert Professional', bio: 'I deliver high-quality work.', hourlyRate: 30 + i, currency: 'USD', availability: 'full_time' });
@@ -90,9 +94,8 @@ const seedDatabase = async () => {
 
     console.log('Seeding 35 Jobs, 20 Gigs, 70 Proposals, and Contracts...');
 
-    // 5. Seed Jobs, Proposals, and Gigs algorithmically[cite: 2]
     const sampleJobTitles = [
-      'Full-Stack MERN Vehicle Management App', // Giving your mock data some realistic flavor
+      'Full-Stack MERN Vehicle Management App', 
       'Community Book Recommendation Web App',
       'Modern E-Commerce Storefront',
       'Digital Media Marketplace App'
@@ -104,7 +107,7 @@ const seedDatabase = async () => {
         client: clients[i % clients.length]._id,
         title: sampleJobTitles[i % sampleJobTitles.length] || `Urgent Project ${i}`,
         description: 'Looking for a reliable developer to build out this platform.',
-        category: savedCategories[0]._id, // Assigning to Web Dev for simplicity
+        category: savedCategories[0]._id, 
         budgetType: 'fixed',
         budgetMin: 500,
         budgetMax: 1500,
@@ -113,7 +116,6 @@ const seedDatabase = async () => {
       jobs.push(job);
     }
 
-    // Generate 1 Gig for each freelancer (Total: 20 Gigs, satisfies 15+ requirement)[cite: 2]
     for (const freelancer of freelancers) {
       await Gig.create({
         freelancer: freelancer._id,
@@ -126,7 +128,6 @@ const seedDatabase = async () => {
       });
     }
 
-    // Generate 2 Proposals per Job (Total: 70 Proposals, satisfies 60+ requirement)[cite: 2]
     for (const job of jobs) {
       const f1 = freelancers[Math.floor(Math.random() * freelancers.length)];
       const f2 = freelancers[Math.floor(Math.random() * freelancers.length)];
@@ -137,7 +138,6 @@ const seedDatabase = async () => {
       }
     }
 
-    // Generate Contracts and Reviews for the completed jobs (Satisfies 10+ contracts and 20+ reviews)[cite: 2]
     const acceptedProposals = await Proposal.find({ status: 'accepted' }).populate('job');
     for (const prop of acceptedProposals) {
       const contract = await Contract.create({
