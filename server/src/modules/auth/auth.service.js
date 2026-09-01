@@ -85,4 +85,5 @@ module.exports = {
     registerUser,
     loginUser,
     forgotPassword,
+    resetPassword,
 }
