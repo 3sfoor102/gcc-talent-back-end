@@ -14,7 +14,7 @@ const contractRouter = require('./modules/contracts/contracts.routes.js')
 const jobRoutes = require('./modules/jobs/jobs.routes')
 const userRoutes = require('./modules/users/users.routes')
 const messageRoutes = require('./modules/messages/messages.routes')
-
+const proposalsRouter = require('./modules/proposals/proposals.routes.js')
 
 require('dotenv').config()
 const express = require('express')
@@ -75,7 +75,7 @@ app.use('/api/v1/contracts', contractRouter);
 
 // Hasan's Routes
 app.use('/api/v1/jobs', jobRoutes)
-// router.get('/', jobsCTRL.searchAndFilter);
+app.use('/api/v1/proposals', proposalsRouter)
 app.use('/api/v1/contracts', contractRouter)
 app.use('/api/v1/users', userRoutes)
 app.use('/api/v1/contracts', contractRouter)
