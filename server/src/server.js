@@ -59,6 +59,8 @@ app.get('/api/v1/reports', verifyToken, reportCtrl.getReports)
 app.get('/api/v1/settings', verifyToken, settingCtrl.getSettings)
 app.put('/api/v1/settings', verifyToken, settingCtrl.updateSetting)
 app.put('/api/v1/settings/avatar', verifyToken, upload.single('avatar'), settingCtrl.updateAvatar)
+app.post('/api/v1/auth/forgot-password', authCtrl.forgotPassword)
+app.post('/api/v1/auth/reset-password', authCtrl.resetPassword)
 
 
 
