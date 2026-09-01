@@ -30,7 +30,7 @@ const updateSetting = async function (req, res, next)
         const userId = req.user.id || req.user._id
         const { name, email, currentPassword, newPassword, avatarUrl } = req.body
 
-        const user = await User.findById(userId)
+        const user = await User.findById(userId).select('+passwordHash')
         if (!user) {
             return res.status(404).json({ success: false, message: 'User not found' })
         }
@@ -40,11 +40,12 @@ const updateSetting = async function (req, res, next)
         if (avatarUrl) user.avatarUrl = avatarUrl
 
         if (newPassword) {
-            if (!currentPassword) {
+            if (!currentPassword) 
+            {
                 return res.status(400).json({ success: false, message: 'Current password is required to set a new password' })
             }
             const bcrypt = require('bcrypt')
-            const isMatch = await bcrypt.compare(currentPassword, user.passwordHash || user.password)
+            const isMatch = await bcrypt.compare(currentPassword, user.passwordHash)
             if (!isMatch) {
                 return res.status(400).json({ success: false, message: 'Current password is incorrect' })
             }
