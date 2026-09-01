@@ -1,9 +1,9 @@
 const authService = require('./auth.service')
+const User = require('../../models/User')
 
 const register = async function (req, res, next)
 {
     try {
-
         const { name, email, password, role } = req.body
 
         const { user, accessToken } = await authService.registerUser({ name, email, password, role })
@@ -27,11 +27,9 @@ const register = async function (req, res, next)
     }
 }
 
-
 const login = async function (req, res, next)
 {
     try {
-
         const { email, password } = req.body
 
         const { user, accessToken } = await authService.loginUser(email, password)
@@ -60,10 +58,23 @@ const login = async function (req, res, next)
 const verify = async function (req, res, next)
 {
     try {
+
+        const foundUser = await User.findById(req.user.id || req.user._id)
+
+        if (!foundUser) {
+            return res.status(404).json({ success: false, message: 'User not found' })
+        }
+
         res.status(200).json({
             success: true,
             data: {
-                user: req.user 
+                user: {
+                    _id: foundUser._id,
+                    name: foundUser.name,
+                    email: foundUser.email,
+                    role: foundUser.role,
+                    avatarUrl: foundUser.avatarUrl
+                }
             }
         })
     }
