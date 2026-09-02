@@ -5,9 +5,7 @@ A robust, enterprise-grade digital freelance marketplace engineered to connect b
 ![GCC Talent Marketplace Landing and Dashboard](public/marketplace-banner.png)
 
 ### Live Demo & Planning
-* **[Live Application](https://your-deployment-link.com)**
-* **[API Documentation (Swagger UI)](http://localhost:3000/api/docs)**
-* **[Project Planning Material](https://trello.com/b/your-board-link)**
+* **[Project Planning Material](https://trello.com/b/RRuEklHK/gcc-talent)**
 
 ---
 
