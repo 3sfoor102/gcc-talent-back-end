@@ -1,7 +1,9 @@
 const mongoose = require('mongoose');
+const crypto = require('crypto');
 const Contract = require('../../models/Contract.js');
 const User = require('../../models/User.js');
 const Transaction = require('../../models/Transaction.js');
+const Dispute = require('../../models/Dispute.js');
 
 const getUserContracts = async (userId, role, status) => {
   const query = { [role]: userId };
@@ -41,6 +43,13 @@ const addMilestone = async (contractId, clientId, milestoneData) => {
     escrowAmount: 0
   });
 
+  contract.activity.push({
+    type: 'milestone_add',
+    by: clientId,
+    message: `Added new milestone: ${milestoneData.title}`,
+    at: new Date()
+  });
+
   await contract.save();
   return contract;
 };
@@ -77,9 +86,6 @@ const fundMilestone = async (contractId, milestoneId, clientId) => {
     milestone.status = 'funded';
     milestone.fundedAt = new Date();
 
-    await user.save({ session });
-    await contract.save({ session });
-
     await Transaction.create([{
       user: clientId,
       type: 'escrow_fund',
@@ -88,9 +94,20 @@ const fundMilestone = async (contractId, milestoneId, clientId) => {
       balanceAfter: user.wallet.available,
       contract: contractId,
       milestoneId: milestoneId,
+      reference: `ESC-FUND-${milestoneId}-${crypto.randomBytes(4).toString('hex')}`,
       status: 'completed'
     }], { session });
 
+    contract.activity.push({
+      type: 'milestone_fund',
+      by: clientId,
+      message: `Funded milestone: ${milestone.title}`,
+      at: new Date()
+    });
+
+    await user.save({ session });
+    await contract.save({ session });
+    
     await session.commitTransaction();
     return { contract, wallet: user.wallet };
   } catch (error) {
@@ -99,6 +116,35 @@ const fundMilestone = async (contractId, milestoneId, clientId) => {
   } finally {
     session.endSession();
   }
+};
+
+const startMilestone = async (contractId, milestoneId, freelancerId) => {
+  const contract = await Contract.findOne({ _id: contractId, freelancer: freelancerId });
+  if (!contract) {
+    const error = new Error('Contract not found or unauthorized');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const milestone = contract.milestones.id(milestoneId);
+  
+  if (!milestone || milestone.status !== 'funded') {
+    const error = new Error('Milestone must be funded before work can begin');
+    error.statusCode = 422;
+    throw error;
+  }
+
+  milestone.status = 'in_progress';
+
+  contract.activity.push({
+    type: 'milestone_start',
+    by: freelancerId,
+    message: `Started work on milestone: ${milestone.title}`,
+    at: new Date()
+  });
+
+  await contract.save();
+  return contract;
 };
 
 const deliverMilestone = async (contractId, milestoneId, freelancerId, deliveryData) => {
@@ -110,8 +156,9 @@ const deliverMilestone = async (contractId, milestoneId, freelancerId, deliveryD
   }
 
   const milestone = contract.milestones.id(milestoneId);
-  if (!milestone || milestone.status !== 'funded') {
-    const error = new Error('Milestone must be funded before delivery');
+  
+  if (!milestone || milestone.status !== 'in_progress') {
+    const error = new Error('Milestone must be in progress before delivery');
     error.statusCode = 422;
     throw error;
   }
@@ -121,8 +168,16 @@ const deliverMilestone = async (contractId, milestoneId, freelancerId, deliveryD
     attachments: deliveryData.attachments || [],
     submittedAt: new Date()
   });
+
   milestone.status = 'delivered';
   milestone.deliveredAt = new Date();
+
+  contract.activity.push({
+    type: 'milestone_deliver',
+    by: freelancerId,
+    message: `Delivered milestone: ${milestone.title}`,
+    at: new Date()
+  });
 
   await contract.save();
   return contract;
@@ -164,7 +219,6 @@ const approveMilestone = async (contractId, milestoneId, clientId) => {
       contract.status = 'completed';
       contract.completedAt = new Date();
     }
-    await contract.save({ session });
 
     await Transaction.create([
       {
@@ -175,6 +229,7 @@ const approveMilestone = async (contractId, milestoneId, clientId) => {
         balanceAfter: freelancer.wallet.available,
         contract: contractId,
         milestoneId: milestoneId,
+        reference: `ESC-REL-${milestoneId}-${crypto.randomBytes(4).toString('hex')}`,
         status: 'completed'
       },
       {
@@ -184,9 +239,19 @@ const approveMilestone = async (contractId, milestoneId, clientId) => {
         direction: 'credit',
         contract: contractId,
         milestoneId: milestoneId,
+        reference: `PLAT-FEE-${milestoneId}-${crypto.randomBytes(4).toString('hex')}`,
         status: 'completed'
       }
     ], { session });
+
+    contract.activity.push({
+      type: 'milestone_approve',
+      by: clientId,
+      message: `Approved milestone: ${milestone.title}`,
+      at: new Date()
+    });
+
+    await contract.save({ session });
 
     await session.commitTransaction();
     return { contract, freelancerWallet: freelancer.wallet };
@@ -198,13 +263,164 @@ const approveMilestone = async (contractId, milestoneId, clientId) => {
   }
 };
 
+const requestMilestoneRevision = async (contractId, milestoneId, clientId, note) => {
+  const contract = await Contract.findOne({ _id: contractId, client: clientId });
+  if (!contract) {
+    const error = new Error('Contract not found or unauthorized');
+    error.statusCode = 404;
+    throw error;
+  }
 
+  const milestone = contract.milestones.id(milestoneId);
+  if (!milestone || milestone.status !== 'delivered') {
+    const error = new Error('Milestone must be delivered to request a revision');
+    error.statusCode = 422;
+    throw error;
+  }
+
+  milestone.status = 'revision_requested';
+  
+  const lastDelivery = milestone.deliveries[milestone.deliveries.length - 1];
+  if (lastDelivery) {
+    lastDelivery.response = 'revision';
+    lastDelivery.responseNote = note;
+    lastDelivery.respondedAt = new Date();
+  }
+
+  contract.activity.push({
+    type: 'milestone_revision',
+    by: clientId,
+    message: `Requested revision for milestone: ${milestone.title}`,
+    at: new Date()
+  });
+
+  await contract.save();
+  return contract;
+};
+
+const cancelContract = async (contractId, userId, role) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const query = { _id: contractId };
+    query[role] = userId;
+    
+    const contract = await Contract.findOne(query).session(session);
+    if (!contract) {
+      const error = new Error('Contract not found or unauthorized');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    if (contract.status === 'completed' || contract.status === 'cancelled') {
+      const error = new Error(`Cannot cancel a ${contract.status} contract`);
+      error.statusCode = 422;
+      throw error;
+    }
+
+    const client = await User.findById(contract.client).session(session);
+
+    for (const milestone of contract.milestones) {
+      if (['funded', 'in_progress', 'delivered', 'revision_requested'].includes(milestone.status)) {
+        client.wallet.available += milestone.escrowAmount;
+        
+        await Transaction.create([{
+          user: client._id,
+          type: 'escrow_refund',
+          amount: milestone.escrowAmount,
+          direction: 'credit',
+          balanceAfter: client.wallet.available,
+          contract: contractId,
+          milestoneId: milestone._id,
+          reference: `ESC-REF-${milestone._id}-${crypto.randomBytes(4).toString('hex')}`,
+          status: 'completed'
+        }], { session });
+
+        milestone.escrowAmount = 0;
+      }
+      
+      if (milestone.status !== 'approved') {
+        milestone.status = 'cancelled';
+      }
+    }
+
+    contract.status = 'cancelled';
+    contract.activity.push({
+      type: 'contract_cancel',
+      by: userId,
+      message: 'Contract was cancelled and applicable escrow refunded',
+      at: new Date()
+    });
+
+    await client.save({ session });
+    await contract.save({ session });
+    
+    await session.commitTransaction();
+    return contract;
+  } catch (error) {
+    await session.abortTransaction();
+    throw error;
+  } finally {
+    session.endSession();
+  }
+};
+
+const openDispute = async (contractId, milestoneId, userId, reason, evidence) => {
+  const contract = await Contract.findById(contractId);
+  if (!contract) {
+    const error = new Error('Contract not found');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  const isClient = contract.client.toString() === userId.toString();
+  const isFreelancer = contract.freelancer.toString() === userId.toString();
+  
+  if (!isClient && !isFreelancer) {
+    const error = new Error('Unauthorized');
+    error.statusCode = 403;
+    throw error;
+  }
+
+  const milestone = contract.milestones.id(milestoneId);
+  if (!milestone || !['funded', 'in_progress', 'delivered', 'revision_requested'].includes(milestone.status)) {
+    const error = new Error('Can only dispute milestones with locked escrow');
+    error.statusCode = 422;
+    throw error;
+  }
+
+  milestone.status = 'disputed';
+
+  const dispute = await Dispute.create({
+    contract: contractId,
+    milestoneId: milestoneId,
+    openedBy: userId,
+    against: isClient ? contract.freelancer : contract.client,
+    reason,
+    evidence: evidence || []
+  });
+
+  contract.activity.push({
+    type: 'dispute_opened',
+    by: userId,
+    message: `Dispute opened on milestone: ${milestone.title}`,
+    at: new Date()
+  });
+
+  await contract.save();
+  return { contract, dispute };
+};
 
 module.exports = {
   getUserContracts,
   getContractWorkspace,
   addMilestone,
   fundMilestone,
+  startMilestone,
   deliverMilestone,
   approveMilestone,
+  requestMilestoneRevision,
+  cancelContract,
+  openDispute
 };
