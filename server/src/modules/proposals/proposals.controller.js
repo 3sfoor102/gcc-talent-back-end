@@ -279,6 +279,8 @@ const declineProposal = async (req, res) => {
     }
 }
 
+
+
 module.exports = {
     createProposal,
     getJobProposals,
@@ -286,5 +288,6 @@ module.exports = {
     updateProposal,
     withdrawProposal,
     acceptProposal,
-    shortlistProposal
+    shortlistProposal,
+    declineProposal
 }

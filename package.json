@@ -2,9 +2,11 @@
   "name": "gcc-talent-back-end",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "server/src/server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server/src/server.js",
+    "dev": "nodemon server/src/server.js"
   },
   "repository": {
     "type": "git",
@@ -20,7 +22,7 @@
   "homepage": "https://github.com/3sfoor102/gcc-talent-back-end#readme",
   "dependencies": {
     "bcrypt": "^6.0.0",
-    "cloudinary": "^1.41.3",
+    "cloudinary": "^2.10.1",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
@@ -28,7 +30,7 @@
     "mongoose": "^9.9.4",
     "morgan": "^1.11.0",
     "multer": "^2.2.0",
-    "multer-storage-cloudinary": "^4.0.0"
+    "multer-storage-cloudinary": "^2.2.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"
