@@ -142,6 +142,24 @@ const getPublicClient = async function (req, res, next) {
     }
 }
 
+const listFreelancers = async function (req, res, next) {
+  try {
+    const result = await profileService.searchFreelancers(req.query)
+    res.status(200).json({
+      success: true,
+      data: result.profiles,
+      meta: {
+        page: result.page,
+        limit: result.limit,
+        total: result.total
+      }
+    })
+  } catch (err) {
+    res.status(500)
+    next(err)
+  }
+}
+
 module.exports = {
     createFreelancer,
     createClient,
@@ -150,5 +168,6 @@ module.exports = {
     getClient,
     updateClient,
     getPublicFreelancer,
-    getPublicClient
+    getPublicClient,
+    listFreelancers
 }
