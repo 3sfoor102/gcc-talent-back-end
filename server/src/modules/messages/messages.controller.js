@@ -24,6 +24,9 @@ const startConversation = async (req, res) => {
         if (context?.gig) existingQuery['context.gig'] = context.gig
 
         let foundConversation = await Conversation.findOne(existingQuery)
+            .populate('participants', 'name avatarUrl role country ratingAvg')
+            .populate('context.job', 'title')
+            .populate('context.contract', 'title')
 
         if (foundConversation) {
             return res.status(200).json({
@@ -32,11 +35,16 @@ const startConversation = async (req, res) => {
             })
         }
 
-        const newConversation = await Conversation.create({
+        const created = await Conversation.create({
             participants: [userId, recipientId],
             context: context || {},
-            unread: 0
+            unread: {}
         })
+
+        const newConversation = await Conversation.findById(created._id)
+            .populate('participants', 'name avatarUrl role country ratingAvg')
+            .populate('context.job', 'title')
+            .populate('context.contract', 'title')
 
         return res.status(201).json({
             success: true,
@@ -90,7 +98,7 @@ const getMessages = async (req, res) => {
             })
         }
 
-        if (!foundConversation.participants.includes(userId.toString())) {
+        if (!foundConversation.participants.some(p => p.toString() === userId.toString())) {
             return res.status(403).json({
                 success: false,
                 error: { code: 'FORBIDDEN', message: 'You are not a participant in this conversation.' }
@@ -134,15 +142,17 @@ const sendMessage = async (req, res) => {
             })
         }
 
-        if (!foundConversation.participants.includes(userId.toString())) {
+        if (!foundConversation.participants.some(p => p.toString() === userId.toString())) {
             return res.status(403).json({
                 success: false,
                 error: { code: 'FORBIDDEN', message: 'You are not a participant in this conversation.' }
             })
         }
 
-        let attachments = [];
-        if (req.files && req.files.length > 0) {
+        let attachments = []
+        if (req.body.attachments && Array.isArray(req.body.attachments)) {
+            attachments = req.body.attachments
+        } else if (req.files && req.files.length > 0) {
             attachments = req.files.map((file) => ({
                 url: file.path,
                 name: file.originalname
@@ -164,21 +174,30 @@ const sendMessage = async (req, res) => {
             readBy: [userId]
         })
 
+        const populatedMessage = await Message.findById(newMessage._id)
+            .populate('sender', 'name avatarUrl role')
+
         foundConversation.lastMessage = {
-            text: text || 'Sent an attachment',
+            text: text || (attachments[0]?.name ? `📎 ${attachments[0].name}` : 'Sent an attachment'),
             sender: userId,
             at: Date.now()
         }
 
-        foundConversation.unread = (foundConversation.unread || 0) + 1
+        const receiverId = foundConversation.participants.find(p => p.toString() !== userId.toString())?.toString()
+
+        if (receiverId) {
+            const currentUnread = foundConversation.unread?.get(receiverId) || 0
+            foundConversation.unread.set(receiverId, currentUnread + 1)
+        }
 
         await foundConversation.save()
 
         return res.status(201).json({
             success: true,
-            data: newMessage
+            data: populatedMessage
         })
     } catch (err) {
+        console.error("Error in sendMessage:", err)
         return res.status(500).json({
             success: false,
             error: { code: 'SERVER_ERROR', message: err.message }
@@ -197,7 +216,7 @@ const markAsRead = async (req, res) => {
             })
         }
 
-        if (!foundConversation.participants.includes(userId.toString())) {
+        if (!foundConversation.participants.some(p => p.toString() === userId.toString())) {
             return res.status(403).json({
                 success: false,
                 error: { code: 'FORBIDDEN', message: 'You are not a participant in this conversation.' }
@@ -209,8 +228,10 @@ const markAsRead = async (req, res) => {
             { $push: { readBy: userId } }
         )
 
-        foundConversation.unread = 0
-        await foundConversation.save()
+        if (foundConversation.unread && typeof foundConversation.unread.set === 'function') {
+            foundConversation.unread.set(userId.toString(), 0)
+            await foundConversation.save()
+        }
 
         return res.status(200).json({
             success: true,
