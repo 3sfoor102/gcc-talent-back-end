@@ -9,19 +9,17 @@ router.use(verifyToken);
 router.get('/', contractsController.getContracts);
 router.get('/:id', contractsController.getContractById);
 
+router.post('/:id/cancel', authorize('client', 'freelancer'), contractsController.cancelContract);
+
 router.post('/:id/milestones', authorize('client'), contractsController.addMilestone);
 router.patch('/:id/milestones/:mid', authorize('client'), contractsController.editMilestone);
 
 router.post('/:id/milestones/:mid/fund', authorize('client'), contractsController.fundMilestone);
+router.post('/:id/milestones/:mid/start', authorize('freelancer'), contractsController.startMilestone);
 router.post('/:id/milestones/:mid/approve', authorize('client'), contractsController.approveMilestone);
-
-router.post(
-  '/:id/milestones/:mid/request-revision',
-  authorize('client'),
-  contractsController.requestMilestoneRevision
-);
-
 router.post('/:id/milestones/:mid/deliver', authorize('freelancer'), contractsController.deliverMilestone);
+router.post('/:id/milestones/:mid/request-revision', authorize('client'), contractsController.requestMilestoneRevision);
+router.post('/:id/milestones/:mid/dispute', authorize('client', 'freelancer'), contractsController.openDispute);
 
 router.post('/:id/reviews', contractsController.createReview);
 

@@ -351,6 +351,23 @@ const fundMilestone = async (req, res, next) => {
     }
 };
 
+const startMilestone = async (req, res, next) => {
+    try {
+        const contractId = req.params.id || req.params.contractId;
+        const milestoneId = req.params.mid || req.params.milestoneId;
+        const freelancerId = req.user._id || req.user.id || req.user.userId;
+
+        const result = await contractsService.startMilestone(contractId, milestoneId, freelancerId);
+
+        return res.status(200).json({
+            success: true,
+            data: result
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 const deliverMilestone = async (req, res, next) => {
     try {
         const contractId = req.params.id || req.params.contractId;
@@ -426,6 +443,24 @@ const cancelContract = async (req, res, next) => {
     }
 };
 
+const openDispute = async (req, res, next) => {
+    try {
+        const contractId = req.params.id || req.params.contractId;
+        const milestoneId = req.params.mid || req.params.milestoneId;
+        const userId = req.user._id || req.user.id || req.user.userId;
+        const { reason, evidence } = req.body;
+
+        const result = await contractsService.openDispute(contractId, milestoneId, userId, reason, evidence);
+
+        return res.status(201).json({
+            success: true,
+            data: result
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     createReview,
     listUserReviews,
@@ -434,8 +469,10 @@ module.exports = {
     addMilestone,
     editMilestone,
     fundMilestone,
+    startMilestone,
     deliverMilestone,
     approveMilestone,
     requestMilestoneRevision,
-    cancelContract
+    cancelContract,
+    openDispute
 };
