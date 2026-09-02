@@ -49,6 +49,13 @@ app.post('/api/v1/auth/login', authCtrl.login)
 app.get('/api/v1/auth/verify', verifyToken, authCtrl.verify)
 app.post('/api/v1/auth/forgot-password', authCtrl.forgotPassword)
 app.post('/api/v1/auth/reset-password', authCtrl.resetPassword)
+app.get('/api/v1/settings', verifyToken, settingCtrl.getSettings)
+app.put('/api/v1/settings', verifyToken, settingCtrl.updateSetting)
+app.put('/api/v1/settings/avatar', verifyToken, upload.single('avatar'), settingCtrl.updateAvatar)
+app.get('/api/v1/settings', verifyToken, settingCtrl.getSettings)
+app.put('/api/v1/settings', verifyToken, settingCtrl.updateSetting)
+app.put('/api/v1/settings/avatar', verifyToken, upload.single('avatar'), settingCtrl.updateAvatar)
+app.use('/api/v1/dashboard', require('./modules/dashboard/dashboard.routes'))
 
 // **Profile Routes:
 // Talent Search & Browse
