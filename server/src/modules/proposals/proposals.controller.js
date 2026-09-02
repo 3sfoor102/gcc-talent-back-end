@@ -325,6 +325,8 @@ const acceptProposal = async (req, res) => {
 
         proposalToAccept.status = 'accepted'
         await proposalToAccept.save({ session })
+        const job = proposalToAccept.job
+
         const sendNotification = require('../../utils/sendNotification');
         await sendNotification({
             userId: proposalToAccept.freelancer,
@@ -334,7 +336,6 @@ const acceptProposal = async (req, res) => {
             link: '/contracts'
         });
 
-        const job = proposalToAccept.job
         job.status = 'in_progress'
         await job.save({ session })
 
