@@ -10,4 +10,9 @@ router.use(verifyToken, authorize('admin'))
 router.get('/users', adminCtrl.getAllUsers)
 router.patch('/users/:id/status', adminCtrl.toggleUserStatus)
 
+router.get('/categories', adminCtrl.getAllCategories)
+router.post('/categories', adminCtrl.createCategory)
+router.patch('/categories/:id', adminCtrl.updateCategory)
+router.delete('/categories/:id', adminCtrl.deleteCategory)
+
 module.exports = router

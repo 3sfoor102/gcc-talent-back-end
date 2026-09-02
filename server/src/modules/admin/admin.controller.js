@@ -1,4 +1,5 @@
 const User = require('../../models/User')
+const Category = require('../../models/Category')
 
 const getAllUsers = async (req, res, next) => {
     try {
@@ -32,7 +33,73 @@ const toggleUserStatus = async (req, res, next) => {
     }
 }
 
+const getAllCategories = async (req, res, next) => {
+    try {
+        const categories = await Category.find({}).sort('-createdAt')
+        res.status(200).json({ success: true, data: categories })
+    } catch (error) {
+        next(error)
+    }
+}
+
+const createCategory = async (req, res, next) => {
+    try {
+        const { name, isFeatured } = req.body;
+        
+        const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        
+        const newCategory = await Category.create({ name, slug, isFeatured });
+        res.status(201).json({ success: true, data: newCategory });
+    } catch (error) {
+        if (error.code === 11000) {
+            return res.status(400).json({ success: false, error: { message: 'Category name already exists' } });
+        }
+        next(error);
+    }
+}
+
+const updateCategory = async (req, res, next) => {
+    try {
+        const { name, isFeatured } = req.body;
+        let updates = { isFeatured };
+        
+        if (name) {
+            updates.name = name;
+            updates.slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        }
+
+        const updatedCategory = await Category.findByIdAndUpdate(req.params.id, updates, { new: true, runValidators: true });
+        
+        if (!updatedCategory) {
+            return res.status(404).json({ success: false, message: 'Category not found' });
+        }
+
+        res.status(200).json({ success: true, data: updatedCategory });
+    } catch (error) {
+        if (error.code === 11000) {
+            return res.status(400).json({ success: false, error: { message: 'Category name already exists' } });
+        }
+        next(error);
+    }
+}
+
+const deleteCategory = async (req, res, next) => {
+    try {
+        const deletedCategory = await Category.findByIdAndDelete(req.params.id);
+        if (!deletedCategory) {
+            return res.status(404).json({ success: false, message: 'Category not found' });
+        }
+        res.status(200).json({ success: true, message: 'Category deleted successfully' });
+    } catch (error) {
+        next(error);
+    }
+}
+
 module.exports = {
     getAllUsers,
-    toggleUserStatus
+    toggleUserStatus,
+    getAllCategories,
+    createCategory,
+    updateCategory,
+    deleteCategory
 }
