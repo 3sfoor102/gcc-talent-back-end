@@ -80,9 +80,7 @@ app.use('/api/v1/contracts', contractRouter);
 // Hasan's Routes
 app.use('/api/v1/jobs', jobRoutes)
 app.use('/api/v1/proposals', proposalsRouter)
-app.use('/api/v1/contracts', contractRouter)
 app.use('/api/v1/users', userRoutes)
-app.use('/api/v1/contracts', contractRouter)
 app.use('/api/v1/conversations', messageRoutes)
 
 
