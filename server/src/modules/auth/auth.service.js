@@ -85,10 +85,46 @@ const resetPassword = async function (token, newPassword) {
     }
 }
 
+const socialLogin = async function (socialData) {
+    const { name, email, avatarUrl } = socialData
+    if (!email) {
+        throw new Error('Email is required from social provider')
+    }
+
+    let user = await User.findOne({ email })
+    if (!user) {
+        const generatedPassword = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8)
+        const salt = await bcrypt.genSalt(10)
+        const passwordHash = await bcrypt.hash(generatedPassword, salt)
+        
+        user = await User.create({
+            name: name || 'User',
+            email,
+            passwordHash,
+            role: 'freelancer',
+            avatarUrl: avatarUrl || '',
+            isEmailVerified: true
+        })
+
+        if (user.role === 'freelancer') {
+            await FreelancerProfile.create({ user: user._id })
+        }
+    }
+
+    if (user.status === 'suspended') {
+        throw new Error('Your account has been suspended by the administrator.')
+    }
+
+    const accessToken = generateAccessToken(user._id, user.role)
+
+    return { user, accessToken }
+}
+
 
 module.exports = {
     registerUser,
     loginUser,
     forgotPassword,
     resetPassword,
+    socialLogin
 }

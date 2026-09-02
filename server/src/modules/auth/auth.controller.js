@@ -124,11 +124,92 @@ const resetPassword = async function (req, res, next) {
     }
 }
 
+const socialLogin = async function (req, res, next) {
+    try {
+        const { user, accessToken } = await authService.socialLogin(req.body);
+
+        res.status(200).json({
+            success: true,
+            data: {
+                user: {
+                    _id: user._id,
+                    name: user.name,
+                    email: user.email,
+                    role: user.role,
+                    avatarUrl: user.avatarUrl
+                },
+                accessToken
+            }
+        });
+    } catch (err) {
+        res.status(400);
+        next(err);
+    }
+};
+
+const linkedinLogin = async function (req, res, next) {
+    try {
+        const { code } = req.body;
+        const redirectUri = 'http://localhost:5173/linkedin';
+
+        const tokenResponse = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+                grant_type: 'authorization_code',
+                code,
+                client_id: process.env.LINKEDIN_CLIENT_ID,
+                client_secret: process.env.LINKEDIN_CLIENT_SECRET,
+                redirect_uri: redirectUri
+            })
+        });
+        const tokenData = await tokenResponse.json();
+        
+        if (tokenData.error) {
+            return res.status(400).json({ success: false, error: { message: tokenData.error_description } });
+        }
+
+        const userResponse = await fetch('https://api.linkedin.com/v2/userinfo', {
+            headers: { Authorization: `Bearer ${tokenData.access_token}` }
+        });
+        const userData = await userResponse.json();
+
+        const socialData = {
+            name: userData.name,
+            email: userData.email,
+            avatarUrl: userData.picture,
+            provider: 'linkedin'
+        };
+
+        const authService = require('./auth.service');
+        const { user, accessToken } = await authService.socialLogin(socialData);
+
+        res.status(200).json({
+            success: true,
+            data: {
+                user: {
+                    _id: user._id,
+                    name: user.name,
+                    email: user.email,
+                    role: user.role,
+                    avatarUrl: user.avatarUrl
+                },
+                accessToken
+            }
+        });
+    } catch (err) {
+        res.status(400);
+        next(err);
+    }
+};
+
 module.exports = {
     register,
     login,
     verify,
     forgotPassword,
     resetPassword,
+    socialLogin,
+    linkedinLogin
 
 }
