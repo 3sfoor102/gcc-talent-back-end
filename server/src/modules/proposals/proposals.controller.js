@@ -74,12 +74,9 @@ const createProposal = async (req, res) => {
             })
         }
 
-        const foundFreelancer = await FreelancerProfile.findOne({ user: userId })
+        let foundFreelancer = await FreelancerProfile.findOne({ user: userId })
         if (!foundFreelancer) {
-            return res.status(404).json({
-                success: false,
-                error: { code: 'NOT_FOUND', message: 'Freelancer profile not found. Please create one before applying.' }
-            })
+            foundFreelancer = await FreelancerProfile.create({ user: userId })
         }
 
         const appliedBefore = await Proposal.findOne({ job: req.params.jobId, freelancer: userId })
@@ -271,6 +268,7 @@ const getJobProposals = async (req, res) => {
 const acceptProposal = async (req, res) => {
     const session = await mongoose.startSession()
     session.startTransaction()
+    
     try {
         const userId = req.user._id || req.user.id || req.user.userId
         const proposalToAccept = await Proposal.findById(req.params.proposalId).populate('job')
@@ -320,7 +318,8 @@ const acceptProposal = async (req, res) => {
         await job.save({ session })
 
         const defaultDueDate = new Date(Date.now() + (proposalToAccept.deliveryDays || 7) * 24 * 60 * 60 * 1000)
-        const milestones = proposalToAccept.milestones && proposalToAccept.milestones.length > 0 ? proposalToAccept.milestones
+        const milestones = proposalToAccept.milestones && proposalToAccept.milestones.length > 0
+            ? proposalToAccept.milestones
             : [{
                 title: 'Final Delivery',
                 amount: proposalToAccept.amount,
@@ -328,7 +327,7 @@ const acceptProposal = async (req, res) => {
                 status: 'pending'
             }]
 
-        const [newContract] = await Contract.create([
+        const newContracts = await Contract.create([
             {
                 client: job.client,
                 freelancer: proposalToAccept.freelancer,
@@ -350,7 +349,7 @@ const acceptProposal = async (req, res) => {
 
         return res.status(201).json({
             success: true,
-            data: newContract
+            data: newContracts[0]
         })
     } catch (err) {
         await session.abortTransaction()
