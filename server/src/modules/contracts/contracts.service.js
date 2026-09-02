@@ -198,11 +198,13 @@ const approveMilestone = async (contractId, milestoneId, clientId) => {
   }
 };
 
+
+
 module.exports = {
   getUserContracts,
   getContractWorkspace,
   addMilestone,
   fundMilestone,
   deliverMilestone,
-  approveMilestone
+  approveMilestone,
 };
