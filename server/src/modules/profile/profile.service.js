@@ -40,9 +40,8 @@ const updateFreelancerProfile = async function (userId, updateData) {
     const profile = await FreelancerProfile.findOneAndUpdate(
         { user: userId },
         { $set: updateData },
-        { new: true, runValidators: true, upsert: true, setDefaultsOnInsert: true }
+        { returnDocument: 'after', runValidators: true, upsert: true, setDefaultsOnInsert: true }
     )
-   
     return profile
 }
 
@@ -60,7 +59,7 @@ const updateClientProfile = async function (userId, updateData) {
     const profile = await ClientProfile.findOneAndUpdate(
         { user: userId },
         { $set: updateData },
-        { new: true, runValidators: true, upsert: true, setDefaultsOnInsert: true }
+        { returnDocument: 'after', runValidators: true, upsert: true, setDefaultsOnInsert: true }
     )
    
     return profile
