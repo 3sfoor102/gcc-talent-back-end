@@ -9,7 +9,6 @@ router.use(verifyToken);
 
 router.get('/', walletController.getWallet);
 router.get('/transactions', walletController.getTransactions);
-router.post('/deposit', authorize('client'), walletController.deposit);
-router.post('/withdraw', authorize('freelancer'), walletController.withdraw);
-
+router.post('/deposit', authorize('client', 'freelancer'), walletController.deposit);
+router.post('/withdraw', authorize('client', 'freelancer'), walletController.withdraw);
 module.exports = router;
