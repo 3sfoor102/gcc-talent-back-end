@@ -386,6 +386,46 @@ const approveMilestone = async (req, res, next) => {
     }
 };
 
+const requestMilestoneRevision = async (req, res, next) => {
+    try {
+        const contractId = req.params.id || req.params.contractId;
+        const milestoneId = req.params.mid || req.params.milestoneId;
+        const clientId = req.user._id || req.user.id || req.user.userId;
+        const { note } = req.body;
+
+        const result = await contractsService.requestMilestoneRevision(
+            contractId,
+            milestoneId,
+            clientId,
+            note
+        );
+
+        return res.status(200).json({
+            success: true,
+            data: result
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+const cancelContract = async (req, res, next) => {
+    try {
+        const contractId = req.params.id || req.params.contractId;
+        const userId = req.user._id || req.user.id || req.user.userId;
+        const role = req.user.role;
+
+        const result = await contractsService.cancelContract(contractId, userId, role);
+
+        return res.status(200).json({
+            success: true,
+            data: result
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     createReview,
     listUserReviews,
@@ -395,5 +435,7 @@ module.exports = {
     editMilestone,
     fundMilestone,
     deliverMilestone,
-    approveMilestone
+    approveMilestone,
+    requestMilestoneRevision,
+    cancelContract
 };

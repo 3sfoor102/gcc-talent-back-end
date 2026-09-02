@@ -8,14 +8,14 @@ const profileCtrl = require('./modules/profile/profile.controller')
 const notificationCtrl = require('./modules/notification/notification.controller')
 const reportCtrl = require('./modules/report/report.controller')
 const settingCtrl = require('./modules/setting/setting.controller')
+const upload = require('./config/multer')
 
 const walletRouter = require('./modules/wallet/wallet.routes.js');
-const contractRouter = require('./modules/contracts/contracts.routes.js');
+const contractRouter = require('./modules/contracts/contracts.routes.js')
 const jobRoutes = require('./modules/jobs/jobs.routes')
-const contractRoutes = require('./modules/contracts/contracts.routes')
 const userRoutes = require('./modules/users/users.routes')
-const contractRoutes = require('./modules/contracts/contracts.routes')
 const messageRoutes = require('./modules/messages/messages.routes')
+const proposalsRouter = require('./modules/proposals/proposals.routes.js')
 
 
 require('dotenv').config()
@@ -43,22 +43,47 @@ app.get('/', function (req, res) {
 })
 
 // Ali Saleh's Routes
-app.post('/auth/register', authCtrl.register)
-app.post('/auth/login', authCtrl.login)
-app.get('/auth/verify', verifyToken, authCtrl.verify)
-app.post('/profile/freelancer', verifyToken, profileCtrl.createFreelancer)
-app.post('/profile/client', verifyToken, profileCtrl.createClient)
-app.get('/profile/freelancer', verifyToken, profileCtrl.getFreelancer)
-app.put('/profile/freelancer', verifyToken, profileCtrl.updateFreelancer)
-app.get('/profile/client', verifyToken, profileCtrl.getClient)
-app.put('/profile/client', verifyToken, profileCtrl.updateClient)
-app.get('/notifications', verifyToken, notificationCtrl.getNotifications)
-app.put('/notifications/:id/read', verifyToken, notificationCtrl.markNotificationRead)
-app.post('/reports', verifyToken, reportCtrl.submitReport)
-app.get('/reports', verifyToken, reportCtrl.getReports)
-app.get('/settings', verifyToken, settingCtrl.getSettings)
-app.put('/settings', verifyToken, settingCtrl.updateSetting)
+// **Authentication Routes:
+app.post('/api/v1/auth/register', authCtrl.register)
+app.post('/api/v1/auth/login', authCtrl.login)
+app.get('/api/v1/auth/verify', verifyToken, authCtrl.verify)
+app.post('/api/v1/auth/forgot-password', authCtrl.forgotPassword)
+app.post('/api/v1/auth/reset-password', authCtrl.resetPassword)
+app.get('/api/v1/settings', verifyToken, settingCtrl.getSettings)
+app.put('/api/v1/settings', verifyToken, settingCtrl.updateSetting)
+app.put('/api/v1/settings/avatar', verifyToken, upload.single('avatar'), settingCtrl.updateAvatar)
+app.get('/api/v1/settings', verifyToken, settingCtrl.getSettings)
+app.put('/api/v1/settings', verifyToken, settingCtrl.updateSetting)
+app.put('/api/v1/settings/avatar', verifyToken, upload.single('avatar'), settingCtrl.updateAvatar)
+app.use('/api/v1/dashboard', require('./modules/dashboard/dashboard.routes'))
 
+// **Profile Routes:
+// Talent Search & Browse
+app.get('/api/v1/profile/freelancers', profileCtrl.listFreelancers)
+// Freelancer Profile Management (Current User)
+app.post('/api/v1/profile/freelancer', verifyToken, profileCtrl.createFreelancer)
+app.get('/api/v1/profile/freelancer', verifyToken, profileCtrl.getFreelancer)
+app.put('/api/v1/profile/freelancer', verifyToken, profileCtrl.updateFreelancer)
+// Client Profile Management (Current User)
+app.post('/api/v1/profile/client', verifyToken, profileCtrl.createClient)
+app.get('/api/v1/profile/client', verifyToken, profileCtrl.getClient)
+app.put('/api/v1/profile/client', verifyToken, profileCtrl.updateClient)
+// Public Profile Views (Lookup by userId)
+app.get('/api/v1/profile/freelancer/:userId', profileCtrl.getPublicFreelancer)
+app.get('/api/v1/profile/client/:userId', profileCtrl.getPublicClient)
+
+// **Notification Routes:
+app.get('/api/v1/notifications', verifyToken, notificationCtrl.getNotifications)
+app.put('/api/v1/notifications/:id/read', verifyToken, notificationCtrl.markNotificationRead)
+
+// **Report & Dispute Routes:
+app.post('/api/v1/reports', verifyToken, reportCtrl.submitReport)
+app.get('/api/v1/reports', verifyToken, reportCtrl.getReports)
+
+// **User Settings & Account Routes:
+app.get('/api/v1/settings', verifyToken, settingCtrl.getSettings)
+app.put('/api/v1/settings', verifyToken, settingCtrl.updateSetting)
+app.put('/api/v1/settings/avatar', verifyToken, upload.single('avatar'), settingCtrl.updateAvatar)
 
 
 
@@ -77,10 +102,8 @@ app.use('/api/v1/contracts', contractRouter);
 
 // Hasan's Routes
 app.use('/api/v1/jobs', jobRoutes)
-router.get('/', jobsCTRL.searchAndFilter);
-app.use('/api/v1/contracts', contractRoutes)
+app.use('/api/v1/proposals', proposalsRouter)
 app.use('/api/v1/users', userRoutes)
-app.use('/api/v1/contracts', contractRoutes)
 app.use('/api/v1/conversations', messageRoutes)
 
 
