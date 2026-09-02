@@ -150,9 +150,15 @@ gcc-talent-marketplace/
 
 ---
 
-## Running Automated Tests
+## Future Enhancements
 
-Run backend integration and unit test suites:
-```bash
-cd server
-npm test
+* **WebSockets Integration**: Implement Socket.IO for push-delivered messaging and live read-receipt updates without background polling.
+* **Automated Identity Verification**: Integration with regional verification services for freelancer credential badges.
+* **Direct Payment Gateways**: Integrate regional GCC payment providers (e.g., BenefitPay, Tap, Fawry).
+* **Localized Multi-Language Support**: Complete Arabic / English UI internationalization (i18n) with RTL layout toggles.
+
+---
+
+## Credits
+
+Special thanks to the instructional team at General Assembly for their continuous mentorship, architectural feedback, and support throughout the development of this platform.
