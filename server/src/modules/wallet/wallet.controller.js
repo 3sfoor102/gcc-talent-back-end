@@ -17,7 +17,7 @@ const deposit = async (req, res, next) => {
   try {
     const userId = req.user._id || req.user.id || req.user.userId;
     const { amount, card } = req.body;
-    const cardNumber = card?.number || "";
+    const cardNumber = typeof card === 'string' ? card : (card?.number || "");
     const result = await walletService.processDeposit(
       userId,
       amount,
