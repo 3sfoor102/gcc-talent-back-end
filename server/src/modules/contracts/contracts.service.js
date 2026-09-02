@@ -412,6 +412,205 @@ const openDispute = async (contractId, milestoneId, userId, reason, evidence) =>
   return { contract, dispute };
 };
 
+const resolveDispute = async (disputeId, adminId, { outcome, freelancerPct, note }) => {
+  if (!['release', 'refund', 'split'].includes(outcome)) {
+    const error = new Error('Invalid dispute outcome');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (outcome === 'split' && (freelancerPct === undefined || freelancerPct < 0 || freelancerPct > 100)) {
+    const error = new Error('freelancerPct must be between 0 and 100 for split outcome');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const dispute = await Dispute.findById(disputeId).session(session);
+    if (!dispute || dispute.status === 'resolved') {
+      const error = new Error('Dispute not found or already resolved');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const contract = await Contract.findById(dispute.contract).session(session);
+    if (!contract) {
+      const error = new Error('Contract not found');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const milestone = contract.milestones.id(dispute.milestoneId);
+    if (!milestone || milestone.status !== 'disputed') {
+      const error = new Error('Milestone not found or not in disputed state');
+      error.statusCode = 422;
+      throw error;
+    }
+
+    const client = await User.findById(contract.client).session(session);
+    const freelancer = await User.findById(contract.freelancer).session(session);
+
+    if (!client || !freelancer) {
+      const error = new Error('Contract parties not found');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const totalEscrow = milestone.escrowAmount;
+    const platformFeePct = parseInt(process.env.PLATFORM_FEE_PCT || '10', 10);
+    const transactions = [];
+
+    if (outcome === 'release') {
+      const fee = (totalEscrow * platformFeePct) / 100;
+      const payout = totalEscrow - fee;
+
+      freelancer.wallet.available += payout;
+      await freelancer.save({ session });
+
+      transactions.push(
+        {
+          user: freelancer._id,
+          type: 'escrow_release',
+          amount: payout,
+          direction: 'credit',
+          balanceAfter: freelancer.wallet.available,
+          contract: contract._id,
+          milestoneId: milestone._id,
+          reference: `DISP-REL-${dispute._id}-${crypto.randomBytes(4).toString('hex')}`,
+          status: 'completed'
+        },
+        {
+          user: null,
+          type: 'platform_fee',
+          amount: fee,
+          direction: 'credit',
+          contract: contract._id,
+          milestoneId: milestone._id,
+          reference: `DISP-FEE-${dispute._id}-${crypto.randomBytes(4).toString('hex')}`,
+          status: 'completed'
+        }
+      );
+
+      milestone.status = 'approved';
+      milestone.approvedAt = new Date();
+    } else if (outcome === 'refund') {
+      client.wallet.available += totalEscrow;
+      await client.save({ session });
+
+      transactions.push({
+        user: client._id,
+        type: 'escrow_refund',
+        amount: totalEscrow,
+        direction: 'credit',
+        balanceAfter: client.wallet.available,
+        contract: contract._id,
+        milestoneId: milestone._id,
+        reference: `DISP-REF-${dispute._id}-${crypto.randomBytes(4).toString('hex')}`,
+        status: 'completed'
+      });
+
+      milestone.status = 'refunded';
+    } else if (outcome === 'split') {
+      const freelancerShare = (totalEscrow * freelancerPct) / 100;
+      const clientShare = totalEscrow - freelancerShare;
+
+      const fee = (freelancerShare * platformFeePct) / 100;
+      const payout = freelancerShare - fee;
+
+      if (payout > 0) {
+        freelancer.wallet.available += payout;
+        await freelancer.save({ session });
+
+        transactions.push({
+          user: freelancer._id,
+          type: 'escrow_release',
+          amount: payout,
+          direction: 'credit',
+          balanceAfter: freelancer.wallet.available,
+          contract: contract._id,
+          milestoneId: milestone._id,
+          reference: `DISP-SPLIT-F-${dispute._id}-${crypto.randomBytes(4).toString('hex')}`,
+          status: 'completed'
+        });
+      }
+
+      if (fee > 0) {
+        transactions.push({
+          user: null,
+          type: 'platform_fee',
+          amount: fee,
+          direction: 'credit',
+          contract: contract._id,
+          milestoneId: milestone._id,
+          reference: `DISP-SPLIT-FEE-${dispute._id}-${crypto.randomBytes(4).toString('hex')}`,
+          status: 'completed'
+        });
+      }
+
+      if (clientShare > 0) {
+        client.wallet.available += clientShare;
+        await client.save({ session });
+
+        transactions.push({
+          user: client._id,
+          type: 'escrow_refund',
+          amount: clientShare,
+          direction: 'credit',
+          balanceAfter: client.wallet.available,
+          contract: contract._id,
+          milestoneId: milestone._id,
+          reference: `DISP-SPLIT-C-${dispute._id}-${crypto.randomBytes(4).toString('hex')}`,
+          status: 'completed'
+        });
+      }
+
+      milestone.status = 'split';
+    }
+
+    milestone.escrowAmount = 0;
+
+    await Transaction.create(transactions, { session });
+
+    dispute.status = 'resolved';
+    dispute.resolution = {
+      outcome,
+      freelancerPct: outcome === 'split' ? freelancerPct : undefined,
+      note,
+      resolvedBy: adminId,
+      at: new Date()
+    };
+    await dispute.save({ session });
+
+    contract.activity.push({
+      type: 'dispute_resolved',
+      by: adminId,
+      message: `Dispute resolved with outcome: ${outcome}`,
+      at: new Date()
+    });
+
+    const allResolved = contract.milestones.every((m) =>
+      ['approved', 'refunded', 'split', 'cancelled'].includes(m.status)
+    );
+    if (allResolved) {
+      contract.status = 'completed';
+      contract.completedAt = new Date();
+    }
+
+    await contract.save({ session });
+
+    await session.commitTransaction();
+    return { dispute, contract };
+  } catch (error) {
+    await session.abortTransaction();
+    throw error;
+  } finally {
+    session.endSession();
+  }
+};
+
 module.exports = {
   getUserContracts,
   getContractWorkspace,
@@ -422,5 +621,6 @@ module.exports = {
   approveMilestone,
   requestMilestoneRevision,
   cancelContract,
-  openDispute
+  openDispute,
+  resolveDispute,
 };

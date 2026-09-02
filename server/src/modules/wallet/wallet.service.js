@@ -1,27 +1,31 @@
-const mongoose = require('mongoose');
-const User = require('../../models/User.js');
-const Transaction = require('../../models/Transaction.js');
-const crypto = require('crypto'); 
+const mongoose = require("mongoose");
+const User = require("../../models/User.js");
+const Transaction = require("../../models/Transaction.js");
+const crypto = require("crypto");
 
 const getUserWallet = async (userId) => {
-  const user = await User.findById(userId).select('wallet');
+  const user = await User.findById(userId).select("wallet");
   if (!user) {
-    const error = new Error('User not found');
+    const error = new Error("User not found");
     error.statusCode = 404;
     throw error;
   }
-  const transactions = await Transaction.find({ user: userId }).sort({ createdAt: -1 });
+  const transactions = await Transaction.find({ user: userId }).sort({
+    createdAt: -1,
+  });
   return { wallet: user.wallet, transactions };
 };
 
 const processDeposit = async (userId, amount, cardNumber) => {
-  if (cardNumber && cardNumber.startsWith('4000')) {
-    const error = new Error('Payment Declined: Insufficient funds or invalid card');
+  if (cardNumber && cardNumber.startsWith("4000")) {
+    const error = new Error(
+      "Payment Declined: Insufficient funds or invalid card",
+    );
     error.statusCode = 402;
     throw error;
   }
-  if (!cardNumber || !cardNumber.startsWith('4242')) {
-    const error = new Error('Payment Failed: Invalid test card');
+  if (!cardNumber || !cardNumber.startsWith("4242")) {
+    const error = new Error("Payment Failed: Invalid test card");
     error.statusCode = 400;
     throw error;
   }
@@ -31,25 +35,30 @@ const processDeposit = async (userId, amount, cardNumber) => {
   try {
     const user = await User.findById(userId).session(session);
     if (!user) {
-      const error = new Error('User not found');
+      const error = new Error("User not found");
       error.statusCode = 404;
       throw error;
     }
 
     user.wallet.available += amount;
     await user.save({ session });
-    const uniqueReference = `DEP-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`
+    const uniqueReference = `DEP-${Date.now()}-${crypto.randomBytes(4).toString("hex")}`;
 
-    const transaction = await Transaction.create([{
-      user: userId,
-      type: 'deposit',
-      amount,
-      direction: 'credit',
-      balanceAfter: user.wallet.available,
-      reference: uniqueReference,
-      status: 'completed',
-      meta: { cardLast4: cardNumber.slice(-4) }
-    }], { session });
+    const transaction = await Transaction.create(
+      [
+        {
+          user: userId,
+          type: "deposit",
+          amount,
+          direction: "credit",
+          balanceAfter: user.wallet.available,
+          reference: uniqueReference,
+          status: "completed",
+          meta: { cardLast4: cardNumber.slice(-4) },
+        },
+      ],
+      { session },
+    );
 
     await session.commitTransaction();
     return { wallet: user.wallet, transaction: transaction[0] };
@@ -67,28 +76,36 @@ const processWithdrawal = async (userId, amount, method) => {
   try {
     const user = await User.findById(userId).session(session);
     if (!user) {
-      const error = new Error('User not found');
+      const error = new Error("User not found");
       error.statusCode = 404;
       throw error;
     }
 
     if (user.wallet.available < amount) {
-      const error = new Error('Insufficient available funds for withdrawal');
+      const error = new Error("Insufficient available funds for withdrawal");
       error.statusCode = 422;
       throw error;
     }
 
     user.wallet.available -= amount;
     await user.save({ session });
-    const transaction = await Transaction.create([{
-      user: userId,
-      type: 'withdrawal',
-      amount,
-      direction: 'debit',
-      balanceAfter: user.wallet.available,
-      status: 'completed',
-      meta: { method }
-    }], { session });
+
+    const uniqueReference = `WTH-${Date.now()}-${crypto.randomBytes(4).toString("hex")}`;
+    const transaction = await Transaction.create(
+      [
+        {
+          user: userId,
+          type: "withdrawal",
+          amount,
+          direction: "debit",
+          balanceAfter: user.wallet.available,
+          reference: uniqueReference,
+          status: "completed",
+          meta: { method },
+        },
+      ],
+      { session },
+    );
 
     await session.commitTransaction();
     return { wallet: user.wallet, transaction: transaction[0] };
@@ -100,4 +117,27 @@ const processWithdrawal = async (userId, amount, method) => {
   }
 };
 
-module.exports = { getUserWallet, processDeposit, processWithdrawal };
+const getUserTransactions = async (userId, queryParams = {}) => {
+  const page = parseInt(queryParams.page, 10) || 1;
+  const limit = parseInt(queryParams.limit, 10) || 12;
+  const skip = (page - 1) * limit;
+
+  const filter = { user: userId };
+  if (queryParams.type) {
+    filter.type = queryParams.type;
+  }
+
+  const [transactions, total] = await Promise.all([
+    Transaction.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit),
+    Transaction.countDocuments(filter),
+  ]);
+
+  return { transactions, page, limit, total };
+};
+
+module.exports = {
+  getUserWallet,
+  processDeposit,
+  processWithdrawal,
+  getUserTransactions,
+};

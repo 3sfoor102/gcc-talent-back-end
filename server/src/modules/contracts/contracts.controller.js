@@ -130,28 +130,20 @@ const getContracts = async (req, res, next) => {
             });
         }
 
-        const queryValues = {
-            status: req.query.status,
-            page: req.query.page || 1,
-            limit: req.query.limit || 12
-        };
-
-        const query = {
-            $or: [{ client: userId }, { freelancer: userId }]
-        };
-
-        if (queryValues.status) {
-            query.status = queryValues.status;
-        }
-
-        const pageNum = parseInt(queryValues.page, 10);
-        const limitNum = parseInt(queryValues.limit, 10);
+        const pageNum = parseInt(req.query.page, 10) || 1;
+        const limitNum = parseInt(req.query.limit, 10) || 12;
         const skip = (pageNum - 1) * limitNum;
+
+        // Enforce role-based tenant isolation (NF-SEC-02)
+        const query = { [role]: userId };
+        if (status) {
+            query.status = status;
+        }
 
         const [contracts, total] = await Promise.all([
             Contract.find(query)
-                .populate('client')
-                .populate('freelancer')
+                .populate('client', 'name avatarUrl')
+                .populate('freelancer', 'name avatarUrl')
                 .sort('-createdAt')
                 .skip(skip)
                 .limit(limitNum),

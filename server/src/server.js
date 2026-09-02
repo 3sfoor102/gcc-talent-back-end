@@ -9,7 +9,7 @@ const notificationCtrl = require('./modules/notification/notification.controller
 const reportCtrl = require('./modules/report/report.controller')
 const settingCtrl = require('./modules/setting/setting.controller')
 const upload = require('./config/multer')
-
+const adminCtrl = require('./modules/admin/admin.routes.js')
 const walletRouter = require('./modules/wallet/wallet.routes.js');
 const contractRouter = require('./modules/contracts/contracts.routes.js')
 const jobRoutes = require('./modules/jobs/jobs.routes')
@@ -93,8 +93,6 @@ app.put('/api/v1/settings/avatar', verifyToken, upload.single('avatar'), setting
 // Alasfoor Routes
 app.use('/api/v1/wallet', walletRouter);
 app.use('/api/v1/contracts', contractRouter);
-
-
 
 
 

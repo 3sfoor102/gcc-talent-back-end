@@ -1,15 +1,17 @@
-const User = require('../../models/User')
-const Category = require('../../models/Category')
-const Report = require('../../models/Report')
+const User = require('../../models/User');
+const Category = require('../../models/Category');
+const Report = require('../../models/Report');
+const Dispute = require('../../models/Dispute');
+const contractsService = require('../contracts/contracts.service');
 
 const getAllUsers = async (req, res, next) => {
     try {
-        const users = await User.find({}).sort('-createdAt')
-        res.status(200).json({ success: true, data: users })
+        const users = await User.find({}).sort('-createdAt');
+        res.status(200).json({ success: true, data: users });
     } catch (error) {
-        next(error)
+        next(error);
     }
-}
+};
 
 const toggleUserStatus = async (req, res, next) => {
     try {
@@ -32,16 +34,16 @@ const toggleUserStatus = async (req, res, next) => {
     } catch (error) {
         next(error);
     }
-}
+};
 
 const getAllCategories = async (req, res, next) => {
     try {
-        const categories = await Category.find({}).sort('-createdAt')
-        res.status(200).json({ success: true, data: categories })
+        const categories = await Category.find({}).sort('-createdAt');
+        res.status(200).json({ success: true, data: categories });
     } catch (error) {
-        next(error)
+        next(error);
     }
-}
+};
 
 const createCategory = async (req, res, next) => {
     try {
@@ -57,7 +59,7 @@ const createCategory = async (req, res, next) => {
         }
         next(error);
     }
-}
+};
 
 const updateCategory = async (req, res, next) => {
     try {
@@ -82,7 +84,7 @@ const updateCategory = async (req, res, next) => {
         }
         next(error);
     }
-}
+};
 
 const deleteCategory = async (req, res, next) => {
     try {
@@ -94,19 +96,19 @@ const deleteCategory = async (req, res, next) => {
     } catch (error) {
         next(error);
     }
-}
+};
 
 const getAllReports = async (req, res, next) => {
     try {
         const reports = await Report.find({})
             .populate('reporter', 'name email avatarUrl')
-            .sort('-createdAt')
+            .sort('-createdAt');
             
-        res.status(200).json({ success: true, data: reports })
+        res.status(200).json({ success: true, data: reports });
     } catch (error) {
-        next(error)
+        next(error);
     }
-}
+};
 
 const updateReportStatus = async (req, res, next) => {
     try {
@@ -141,7 +143,6 @@ const updateReportStatus = async (req, res, next) => {
             }
 
             if (userIdToBan) {
-                const User = require('../../models/User');
                 await User.findByIdAndUpdate(userIdToBan, { status: 'suspended' });
             }
         }
@@ -150,7 +151,57 @@ const updateReportStatus = async (req, res, next) => {
     } catch (error) {
         next(error);
     }
-}
+};
+
+const getAllDisputes = async (req, res, next) => {
+    try {
+        const page = parseInt(req.query.page, 10) || 1;
+        const limit = parseInt(req.query.limit, 10) || 12;
+        const skip = (page - 1) * limit;
+
+        const query = {};
+        if (req.query.status) query.status = req.query.status;
+
+        const [disputes, total] = await Promise.all([
+            Dispute.find(query)
+                .populate('contract', 'title totalAmount')
+                .populate('openedBy', 'name email')
+                .populate('against', 'name email')
+                .sort('-createdAt')
+                .skip(skip)
+                .limit(limit),
+            Dispute.countDocuments(query)
+        ]);
+
+        return res.status(200).json({
+            success: true,
+            data: disputes,
+            meta: { page, limit, total }
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+const resolveDispute = async (req, res, next) => {
+    try {
+        const adminId = req.user._id || req.user.id || req.user.userId;
+        const { outcome, freelancerPct, note } = req.body;
+
+        const result = await contractsService.resolveDispute(req.params.id, adminId, {
+            outcome,
+            freelancerPct: freelancerPct !== undefined ? Number(freelancerPct) : undefined,
+            note
+        });
+
+        return res.status(200).json({
+            success: true,
+            data: result
+        });
+    } catch (error) {
+        next(error);
+    }
+};
 
 module.exports = {
     getAllUsers,
@@ -160,5 +211,7 @@ module.exports = {
     updateCategory,
     deleteCategory,
     getAllReports,
-    updateReportStatus 
-}
+    updateReportStatus,
+    getAllDisputes,
+    resolveDispute
+};
