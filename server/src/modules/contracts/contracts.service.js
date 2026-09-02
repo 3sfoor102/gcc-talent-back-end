@@ -195,19 +195,37 @@ const approveMilestone = async (contractId, milestoneId, clientId) => {
       throw error;
     }
 
-    const milestone = contract.milestones.id(milestoneId);
-    if (!milestone || milestone.status !== 'delivered') {
-      const error = new Error('Milestone must be delivered before approval');
+    const milestone = contract.milestones.id(milestoneId) || contract.milestones.find(m => m._id.toString() === milestoneId.toString());
+    if (!milestone) {
+      const error = new Error('Milestone not found');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    if (milestone.status !== 'delivered') {
+      const error = new Error(`Milestone must be delivered before approval (Current status: ${milestone.status})`);
       error.statusCode = 422;
       throw error;
     }
 
+    // Safely fallback to milestone.amount if escrowAmount is missing
+    const escrowValue = Number(milestone.escrowAmount || milestone.amount || 0);
     const platformFeePct = parseInt(process.env.PLATFORM_FEE_PCT || '10', 10);
-    const platformFee = (milestone.escrowAmount * platformFeePct) / 100;
-    const freelancerPayout = milestone.escrowAmount - platformFee;
+    const platformFee = (escrowValue * platformFeePct) / 100;
+    const freelancerPayout = escrowValue - platformFee;
 
     const freelancer = await User.findById(contract.freelancer).session(session);
-    freelancer.wallet.available += freelancerPayout;
+    if (!freelancer) {
+      const error = new Error('Freelancer user not found');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    // Ensure wallet object exists to prevent undefined property errors
+    if (!freelancer.wallet) {
+      freelancer.wallet = { available: 0, pending: 0 };
+    }
+    freelancer.wallet.available = Number(freelancer.wallet.available || 0) + freelancerPayout;
     await freelancer.save({ session });
 
     milestone.status = 'approved';
@@ -229,20 +247,19 @@ const approveMilestone = async (contractId, milestoneId, clientId) => {
         balanceAfter: freelancer.wallet.available,
         contract: contractId,
         milestoneId: milestoneId,
-        reference: `ESC-REL-${milestoneId}-${crypto.randomBytes(4).toString('hex')}`,
+        reference: `ESC-REL-${milestoneId}-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`,
         status: 'completed'
       },
       {
-        user: null,
         type: 'platform_fee',
         amount: platformFee,
         direction: 'credit',
         contract: contractId,
         milestoneId: milestoneId,
-        reference: `PLAT-FEE-${milestoneId}-${crypto.randomBytes(4).toString('hex')}`,
+        reference: `PLAT-FEE-${milestoneId}-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`,
         status: 'completed'
       }
-    ], { session });
+    ], { session, ordered: true });;
 
     contract.activity.push({
       type: 'milestone_approve',
@@ -257,6 +274,7 @@ const approveMilestone = async (contractId, milestoneId, clientId) => {
     return { contract, freelancerWallet: freelancer.wallet };
   } catch (error) {
     await session.abortTransaction();
+    console.error("CRITICAL approveMilestone Error Stack:", error);
     throw error;
   } finally {
     session.endSession();
@@ -459,7 +477,7 @@ const resolveDispute = async (disputeId, adminId, { outcome, freelancerPct, note
       throw error;
     }
 
-    const totalEscrow = milestone.escrowAmount;
+    const totalEscrow = Number(milestone.escrowAmount || milestone.amount || 0);
     const platformFeePct = parseInt(process.env.PLATFORM_FEE_PCT || '10', 10);
     const transactions = [];
 
@@ -483,7 +501,6 @@ const resolveDispute = async (disputeId, adminId, { outcome, freelancerPct, note
           status: 'completed'
         },
         {
-          user: null,
           type: 'platform_fee',
           amount: fee,
           direction: 'credit',
@@ -539,7 +556,6 @@ const resolveDispute = async (disputeId, adminId, { outcome, freelancerPct, note
 
       if (fee > 0) {
         transactions.push({
-          user: null,
           type: 'platform_fee',
           amount: fee,
           direction: 'credit',
@@ -572,7 +588,7 @@ const resolveDispute = async (disputeId, adminId, { outcome, freelancerPct, note
 
     milestone.escrowAmount = 0;
 
-    await Transaction.create(transactions, { session });
+    await Transaction.create(transactions, { session, ordered: true });
 
     dispute.status = 'resolved';
     dispute.resolution = {
@@ -605,6 +621,7 @@ const resolveDispute = async (disputeId, adminId, { outcome, freelancerPct, note
     return { dispute, contract };
   } catch (error) {
     await session.abortTransaction();
+    console.error("resolveDispute Error:", error);
     throw error;
   } finally {
     session.endSession();
