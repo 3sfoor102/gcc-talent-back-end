@@ -116,11 +116,39 @@ const updateClient = async function (req, res, next) {
     }
 }
 
+const getPublicFreelancer = async function (req, res, next) {
+    try {
+        const profile = await profileService.getPublicFreelancerProfile(req.params.userId)
+        res.status(200).json({
+            success: true,
+            data: { profile }
+        })
+    } catch (err) {
+        res.status(404)
+        next(err)
+    }
+}
+
+const getPublicClient = async function (req, res, next) {
+    try {
+        const profile = await profileService.getPublicClientProfile(req.params.userId)
+        res.status(200).json({
+            success: true,
+            data: { profile }
+        })
+    } catch (err) {
+        res.status(404)
+        next(err)
+    }
+}
+
 module.exports = {
     createFreelancer,
     createClient,
     getFreelancer,
     updateFreelancer,
     getClient,
-    updateClient
+    updateClient,
+    getPublicFreelancer,
+    getPublicClient
 }

@@ -50,6 +50,8 @@ app.post('/api/v1/profile/freelancer', verifyToken, profileCtrl.createFreelancer
 app.post('/api/v1/profile/client', verifyToken, profileCtrl.createClient)
 app.get('/api/v1/profile/freelancer', verifyToken, profileCtrl.getFreelancer)
 app.put('/api/v1/profile/freelancer', verifyToken, profileCtrl.updateFreelancer)
+app.get('/api/v1/profile/freelancer/:userId', profileCtrl.getPublicFreelancer);
+app.get('/api/v1/profile/client/:userId', profileCtrl.getPublicClient);
 app.get('/api/v1/profile/client', verifyToken, profileCtrl.getClient)
 app.put('/api/v1/profile/client', verifyToken, profileCtrl.updateClient)
 app.get('/api/v1/notifications', verifyToken, notificationCtrl.getNotifications)
