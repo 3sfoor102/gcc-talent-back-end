@@ -1,22 +1,32 @@
+const mongoose = require('mongoose')
 const Conversation = require('../../models/Conversation')
 const Message = require('../../models/Message')
 
 const startConversation = async (req, res) => {
     try {
-        const userId = req.user._id || req.user.id || req.user.userId;
+        const rawUserId = req.user?._id || req.user?.id || req.user?.userId;
+        const rawRecipientId = req.body?.recipientId;
+        const context = req.body?.context;
 
-        const recipientId = req.body.recipientId
-        const context = req.body.context
-
-        if (!recipientId) {
+        if (!rawRecipientId || rawRecipientId === 'undefined') {
             return res.status(400).json({
                 success: false,
                 error: { code: 'VALIDATION_ERROR', message: 'Recipient ID is required.' }
             })
         }
 
+        if (rawUserId.toString() === rawRecipientId.toString()) {
+            return res.status(400).json({
+                success: false,
+                error: { code: 'VALIDATION_ERROR', message: 'Cannot start a conversation with yourself.' }
+            })
+        }
+
+        const userObjectId = new mongoose.Types.ObjectId(rawUserId)
+        const recipientObjectId = new mongoose.Types.ObjectId(rawRecipientId)
+
         const existingQuery = {
-            participants: { $all: [userId, recipientId] }
+            participants: { $all: [userObjectId, recipientObjectId] }
         };
 
         if (context?.job) existingQuery['context.job'] = context.job
@@ -36,9 +46,9 @@ const startConversation = async (req, res) => {
         }
 
         const created = await Conversation.create({
-            participants: [userId, recipientId],
+            participants: [userObjectId, recipientObjectId],
             context: context || {},
-            unread: {}
+            unread: new Map()
         })
 
         const newConversation = await Conversation.findById(created._id)
