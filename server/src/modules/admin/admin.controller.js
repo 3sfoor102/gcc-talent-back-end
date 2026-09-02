@@ -111,14 +111,39 @@ const getAllReports = async (req, res, next) => {
 const updateReportStatus = async (req, res, next) => {
     try {
         const { status } = req.body;
+        let finalStatus = status;
+        let banApplied = false;
+
+        if (status === 'banned') {
+            finalStatus = 'resolved';
+            banApplied = true;
+        }
+
         const report = await Report.findByIdAndUpdate(
             req.params.id,
-            { status },
+            { status: finalStatus },
             { new: true, runValidators: true }
         ).populate('reporter', 'name email avatarUrl');
 
         if (!report) {
             return res.status(404).json({ success: false, message: 'Report not found' });
+        }
+
+        if (banApplied) {
+            let userIdToBan = null;
+            
+            if (report.targetType === 'User') {
+                userIdToBan = report.targetId;
+            } else if (report.targetType === 'Job') {
+                const Job = require('../../models/Job');
+                const job = await Job.findById(report.targetId);
+                if (job) userIdToBan = job.client;
+            }
+
+            if (userIdToBan) {
+                const User = require('../../models/User');
+                await User.findByIdAndUpdate(userIdToBan, { status: 'suspended' });
+            }
         }
 
         res.status(200).json({ success: true, data: report });
