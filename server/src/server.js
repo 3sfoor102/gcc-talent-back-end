@@ -56,6 +56,7 @@ app.get('/api/v1/settings', verifyToken, settingCtrl.getSettings)
 app.put('/api/v1/settings', verifyToken, settingCtrl.updateSetting)
 app.put('/api/v1/settings/avatar', verifyToken, upload.single('avatar'), settingCtrl.updateAvatar)
 app.use('/api/v1/dashboard', require('./modules/dashboard/dashboard.routes'))
+app.use('/api/v1/admin', require('./modules/admin/admin.routes'))
 
 // **Profile Routes:
 // Talent Search & Browse
