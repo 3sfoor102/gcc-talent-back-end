@@ -194,6 +194,19 @@ const sendMessage = async (req, res) => {
         }
 
         const receiverId = foundConversation.participants.find(p => p.toString() !== userId.toString())?.toString()
+        if (receiverId) {
+            const currentUnread = foundConversation.unread?.get(receiverId) || 0
+            foundConversation.unread.set(receiverId, currentUnread + 1)
+
+            const sendNotification = require('../../utils/sendNotification');
+            await sendNotification({
+                userId: receiverId,
+                type: 'new_message',
+                title: 'New Message',
+                body: `You received a new message from a project participant.`,
+                link: '/messages'
+            });
+        }
 
         if (receiverId) {
             const currentUnread = foundConversation.unread?.get(receiverId) || 0

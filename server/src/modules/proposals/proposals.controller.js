@@ -99,6 +99,19 @@ const createProposal = async (req, res) => {
         }
 
         const newProposal = await Proposal.create(proposalDetails)
+        const User = require('../../models/User');
+        const sendNotification = require('../../utils/sendNotification');
+
+        const jobOwner = await Job.findById(req.params.jobId).select('client title');
+        if (jobOwner) {
+            await sendNotification({
+                userId: jobOwner.client,
+                type: 'new_proposal',
+                title: 'New Proposal Received',
+                body: `A freelancer submitted a proposal on your job: "${jobOwner.title}"`,
+                link: `/client/jobs/${jobOwner._id}/proposals`
+            });
+        }
 
         foundJob.proposalsCount = (foundJob.proposalsCount || 0) + 1
         await foundJob.save()
@@ -268,7 +281,7 @@ const getJobProposals = async (req, res) => {
 const acceptProposal = async (req, res) => {
     const session = await mongoose.startSession()
     session.startTransaction()
-    
+
     try {
         const userId = req.user._id || req.user.id || req.user.userId
         const proposalToAccept = await Proposal.findById(req.params.proposalId).populate('job')
@@ -312,6 +325,14 @@ const acceptProposal = async (req, res) => {
 
         proposalToAccept.status = 'accepted'
         await proposalToAccept.save({ session })
+        const sendNotification = require('../../utils/sendNotification');
+        await sendNotification({
+            userId: proposalToAccept.freelancer,
+            type: 'proposal_accepted',
+            title: 'Proposal Accepted! 🎉',
+            body: `Your proposal for "${job.title}" has been accepted and a contract was created.`,
+            link: '/contracts'
+        });
 
         const job = proposalToAccept.job
         job.status = 'in_progress'
