@@ -1,5 +1,6 @@
 const authService = require('./auth.service')
 const User = require('../../models/User')
+const { sendResetEmail } = require('../../utils/mailer')
 
 const register = async function (req, res, next)
 {
@@ -92,11 +93,11 @@ const forgotPassword = async function (req, res, next) {
 
         const resetUrl = `http://localhost:5173/reset-password/${resetToken}`
 
-        console.log(`\n\n🔑 [PASSWORD RESET LINK for ${email}]:\n👉 ${resetUrl}\n\n`)
+        await sendResetEmail(email, resetUrl)
 
         res.status(200).json({
             success: true,
-            message: 'Password reset link generated! Check your server console.'
+            message: 'Password reset link sent to your email successfully!'
         })
     } catch (err) {
         res.status(400)
