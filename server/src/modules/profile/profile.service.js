@@ -10,7 +10,7 @@ const createFreelancerProfile = async function (userId, profileData) {
     }
 
     const profile = await FreelancerProfile.create({ user: userId, ...profileData })
-  
+
     return profile
 }
 
@@ -22,7 +22,7 @@ const createClientProfile = async function (userId, profileData) {
     }
 
     const profile = await ClientProfile.create({ user: userId, ...profileData })
-    
+
     return profile
 }
 
@@ -61,8 +61,30 @@ const updateClientProfile = async function (userId, updateData) {
         { $set: updateData },
         { returnDocument: 'after', runValidators: true, upsert: true, setDefaultsOnInsert: true }
     )
-   
+
     return profile
+}
+
+const getPublicFreelancerProfile = async function (userId) {
+    const profile = await FreelancerProfile.findOne({ user: userId })
+        .populate('user', 'name avatarUrl country city ratingAvg ratingCount createdAt')
+
+    if (!profile) {
+        throw new Error('Freelancer profile not found')
+    }
+
+    return profile
+}
+
+const getPublicClientProfile = async function (userId) {
+    const profile = await ClientProfile.findOne({ user: userId })
+        .populate('user', 'name avatarUrl country city ratingAvg ratingCount createdAt')
+
+    if (!profile) {
+        throw new Error('Client profile not found')
+    }
+
+    return profile;
 }
 
 
@@ -72,5 +94,7 @@ module.exports = {
     getFreelancerProfile,
     updateFreelancerProfile,
     getClientProfile,
-    updateClientProfile
+    updateClientProfile,
+    getPublicFreelancerProfile,
+    getPublicClientProfile
 }
