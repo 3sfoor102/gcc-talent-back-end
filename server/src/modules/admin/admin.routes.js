@@ -14,5 +14,8 @@ router.get('/categories', adminCtrl.getAllCategories)
 router.post('/categories', adminCtrl.createCategory)
 router.patch('/categories/:id', adminCtrl.updateCategory)
 router.delete('/categories/:id', adminCtrl.deleteCategory)
+router.get('/reports', adminCtrl.getAllReports)
+router.patch('/reports/:id/status', adminCtrl.updateReportStatus)
+
 
 module.exports = router

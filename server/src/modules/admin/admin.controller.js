@@ -1,5 +1,6 @@
 const User = require('../../models/User')
 const Category = require('../../models/Category')
+const Report = require('../../models/Report')
 
 const getAllUsers = async (req, res, next) => {
     try {
@@ -95,11 +96,44 @@ const deleteCategory = async (req, res, next) => {
     }
 }
 
+const getAllReports = async (req, res, next) => {
+    try {
+        const reports = await Report.find({})
+            .populate('reporter', 'name email avatarUrl')
+            .sort('-createdAt')
+            
+        res.status(200).json({ success: true, data: reports })
+    } catch (error) {
+        next(error)
+    }
+}
+
+const updateReportStatus = async (req, res, next) => {
+    try {
+        const { status } = req.body;
+        const report = await Report.findByIdAndUpdate(
+            req.params.id,
+            { status },
+            { new: true, runValidators: true }
+        ).populate('reporter', 'name email avatarUrl');
+
+        if (!report) {
+            return res.status(404).json({ success: false, message: 'Report not found' });
+        }
+
+        res.status(200).json({ success: true, data: report });
+    } catch (error) {
+        next(error);
+    }
+}
+
 module.exports = {
     getAllUsers,
     toggleUserStatus,
     getAllCategories,
     createCategory,
     updateCategory,
-    deleteCategory
+    deleteCategory,
+    getAllReports,
+    updateReportStatus 
 }
