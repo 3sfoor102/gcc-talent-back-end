@@ -59,11 +59,14 @@ const login = async function (req, res, next)
 const verify = async function (req, res, next)
 {
     try {
-
         const foundUser = await User.findById(req.user.id || req.user._id)
 
         if (!foundUser) {
             return res.status(404).json({ success: false, message: 'User not found' })
+        }
+
+        if (foundUser.status === 'suspended') {
+            return res.status(403).json({ success: false, message: 'Your account has been suspended.' })
         }
 
         res.status(200).json({
@@ -74,7 +77,8 @@ const verify = async function (req, res, next)
                     name: foundUser.name,
                     email: foundUser.email,
                     role: foundUser.role,
-                    avatarUrl: foundUser.avatarUrl
+                    avatarUrl: foundUser.avatarUrl,
+                    status: foundUser.status
                 }
             }
         })

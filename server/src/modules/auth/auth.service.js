@@ -45,6 +45,10 @@ const loginUser = async function (email, password) {
         throw new Error('Invalid email or password')
     }
 
+    if (user.status === 'suspended') {
+        throw new Error('Your account has been suspended by the administrator.')
+    }
+
     const isMatch = await bcrypt.compare(password, user.passwordHash)
 
     if (!isMatch) {

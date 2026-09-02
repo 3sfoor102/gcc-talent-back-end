@@ -8,5 +8,6 @@ const authorize = require('../../middleware/authorize')
 router.use(verifyToken, authorize('admin'))
 
 router.get('/users', adminCtrl.getAllUsers)
+router.patch('/users/:id/status', adminCtrl.toggleUserStatus)
 
 module.exports = router
