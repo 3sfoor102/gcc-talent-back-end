@@ -2,95 +2,67 @@ const FreelancerProfile = require('../../models/FreelancerProfile')
 
 const ClientProfile = require('../../models/ClientProfile')
 
-
-const createFreelancerProfile = async function (userId, profileData) 
-{
-
+const createFreelancerProfile = async function (userId, profileData) {
     const existingProfile = await FreelancerProfile.findOne({ user: userId })
 
-    if (existingProfile) 
-    {
+    if (existingProfile) {
         throw new Error('Freelancer profile already exists')
     }
 
     const profile = await FreelancerProfile.create({ user: userId, ...profileData })
-
+  
     return profile
 }
 
-
-
-const createClientProfile = async function (userId, profileData) 
-{
+const createClientProfile = async function (userId, profileData) {
     const existingProfile = await ClientProfile.findOne({ user: userId })
 
-    if (existingProfile) 
-    {
+    if (existingProfile) {
         throw new Error('Client profile already exists')
     }
 
     const profile = await ClientProfile.create({ user: userId, ...profileData })
-
+    
     return profile
 }
 
-
-const getFreelancerProfile = async function (userId) 
-{
-    const profile = await FreelancerProfile.findOne({ user: userId })
+const getFreelancerProfile = async function (userId) {
+    let profile = await FreelancerProfile.findOne({ user: userId })
 
     if (!profile) {
-        throw new Error('Freelancer profile not found')
+        profile = await FreelancerProfile.create({ user: userId })
     }
 
     return profile
 }
 
-
-const updateFreelancerProfile = async function (userId, updateData)
-{
-    const profile = await FreelancerProfile.findOneAndUpdate
-    (
+const updateFreelancerProfile = async function (userId, updateData) {
+    const profile = await FreelancerProfile.findOneAndUpdate(
         { user: userId },
-        updateData,
-        { new: true, runValidators: true }
+        { $set: updateData },
+        { new: true, runValidators: true, upsert: true, setDefaultsOnInsert: true }
     )
-    if (!profile)
-    {
-        throw new Error('Freelancer profile not found')
-    }
+   
     return profile
 }
 
+const getClientProfile = async function (userId) {
+    let profile = await ClientProfile.findOne({ user: userId })
 
-
-const getClientProfile = async function (userId)
-{
-    const profile = await ClientProfile.findOne({ user: userId })
-    
-    if (!profile)
-    {
-        throw new Error('Client profile not found')
+    if (!profile) {
+        profile = await ClientProfile.create({ user: userId })
     }
 
     return profile
 }
 
-
-
-const updateClientProfile = async function (userId, updateData)
-{
+const updateClientProfile = async function (userId, updateData) {
     const profile = await ClientProfile.findOneAndUpdate(
         { user: userId },
-        updateData,
-        { new: true, runValidators: true }
+        { $set: updateData },
+        { new: true, runValidators: true, upsert: true, setDefaultsOnInsert: true }
     )
-
-    if (!profile)
-    {
-        throw new Error('Client profile not found')
-    }
-
+   
     return profile
 }
 

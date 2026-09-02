@@ -1,11 +1,8 @@
 const profileService = require('./profile.service')
 
-
-const createFreelancer = async function (req, res, next) 
-{
+const createFreelancer = async function (req, res, next) {
     try {
-        const userId = req.user.id
-
+        const userId = req.user?._id || req.user?.id || req.user?.userId
         const profileData = req.body
 
         const profile = await profileService.createFreelancerProfile(userId, profileData)
@@ -23,12 +20,9 @@ const createFreelancer = async function (req, res, next)
     }
 }
 
-
-const createClient = async function (req, res, next) 
-{
+const createClient = async function (req, res, next) {
     try {
-        const userId = req.user.id
-
+        const userId = req.user?._id || req.user?.id || req.user?.userId
         const profileData = req.body
 
         const profile = await profileService.createClientProfile(userId, profileData)
@@ -46,12 +40,9 @@ const createClient = async function (req, res, next)
     }
 }
 
-
-const getFreelancer = async function (req, res, next)
-{
+const getFreelancer = async function (req, res, next) {
     try {
-        const userId = req.user.id
-
+        const userId = req.user?._id || req.user?.id || req.user?.userId
         const profile = await profileService.getFreelancerProfile(userId)
 
         res.status(200).json({
@@ -61,20 +52,15 @@ const getFreelancer = async function (req, res, next)
             }
         })
     }
-    catch (err)
-    {
+    catch (err) {
         res.status(404)
         next(err)
     }
 }
 
-
-
-const updateFreelancer = async function (req, res, next)
-{
+const updateFreelancer = async function (req, res, next) {
     try {
-        const userId = req.user.id
-
+        const userId = req.user?._id || req.user?.id || req.user?.userId
         const updateData = req.body
 
         const profile = await profileService.updateFreelancerProfile(userId, updateData)
@@ -86,20 +72,15 @@ const updateFreelancer = async function (req, res, next)
             }
         })
     }
-    catch (err)
-    {
+    catch (err) {
         res.status(400)
         next(err)
     }
 }
 
-
-
-const getClient = async function (req, res, next)
-{
+const getClient = async function (req, res, next) {
     try {
-        const userId = req.user.id
-
+        const userId = req.user?._id || req.user?.id || req.user?.userId
         const profile = await profileService.getClientProfile(userId)
 
         res.status(200).json({
@@ -109,20 +90,15 @@ const getClient = async function (req, res, next)
             }
         })
     }
-    catch (err)
-    {
+    catch (err) {
         res.status(404)
         next(err)
     }
 }
 
-
-
-const updateClient = async function (req, res, next)
-{
+const updateClient = async function (req, res, next) {
     try {
-        const userId = req.user.id
-
+        const userId = req.user?._id || req.user?.id || req.user?.userId
         const updateData = req.body
 
         const profile = await profileService.updateClientProfile(userId, updateData)
@@ -134,8 +110,7 @@ const updateClient = async function (req, res, next)
             }
         })
     }
-    catch (err)
-    {
+    catch (err) {
         res.status(400)
         next(err)
     }
