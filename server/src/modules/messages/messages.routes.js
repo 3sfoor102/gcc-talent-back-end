@@ -1,20 +1,19 @@
 const express = require('express')
 const router = express.Router()
 
-const { authenticate } = require('../../middleware/auth')
-const upload = require('../../middleware/upload')
-const msgCTRL = require('../controllers/messages.controller')
+const verifyToken = require('../../middleware/verify-token')
+const upload = require('../../config/multer')
+const msgCTRL = require('./messages.controller')
 
+router.post('/', verifyToken, msgCTRL.startConversation)
+router.get('/', verifyToken, msgCTRL.getConversations)
 
-router.post('/', authenticate, msgCTRL.startConversation)
-router.get('/', authenticate, msgCTRL.getConversations)
-
-router.get('/:conversationId/messages', authenticate, msgCTRL.getMessages)
-router.post('/:conversationId/read', authenticate, msgCTRL.markAsRead)
+router.get('/:conversationId/messages', verifyToken, msgCTRL.getMessages)
+router.post('/:conversationId/read', verifyToken, msgCTRL.markAsRead)
 
 router.post(
     '/:conversationId/messages',
-    authenticate,
+    verifyToken,
     upload.array('attachments', 5),
     msgCTRL.sendMessage
 )
