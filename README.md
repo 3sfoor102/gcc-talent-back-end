@@ -6,7 +6,7 @@ A robust, enterprise-grade digital freelance marketplace engineered to connect b
 
 ### Live Demo & Planning
 * **[Live Application](https://your-deployment-link.com)**
-* **[API Documentation (Swagger UI)](http://localhost:5000/api/docs)**
+* **[API Documentation (Swagger UI)](http://localhost:3000/api/docs)**
 * **[Project Planning Material](https://trello.com/b/your-board-link)**
 
 ---
@@ -39,7 +39,7 @@ The project was delivered using an agile, decoupled MERN architecture with stric
 * **Backend**: Node.js 20 LTS, Express.js (RESTful Architecture)
 * **Database**: MongoDB Atlas with Mongoose ODM (Replica Set required for ACID transactions)
 * **File Storage**: Cloudinary Media API
-* **Security & Auth**: JSON Web Tokens (short-lived access tokens & refresh tokens), bcryptjs password hashing
+* **Security & Auth**: JSON Web Tokens (short-lived access tokens & refresh tokens), bcryptjs password hashing, OAuth (Google & LinkedIn)
 * **Testing & CI/CD**: Jest, Supertest, GitHub Actions
 
 ---
@@ -50,6 +50,7 @@ Ensure you have the following installed and configured before running locally:
 * **Node.js**: v20 LTS or higher
 * **MongoDB**: A running MongoDB instance or MongoDB Atlas cluster (**Must be a Replica Set** to support session transactions)
 * **Cloudinary Account**: Cloud name, API key, and secret for media assets
+* **OAuth Credentials**: Client IDs and secrets from Google Cloud Console and LinkedIn Developers (optional, for social login)
 
 ---
 
@@ -69,19 +70,19 @@ npm install
 
 Create a `.env` file in the `server/` directory:
 ```env
-NODE_ENV=development
-PORT=5000
-CLIENT_URL=http://localhost:5173
+PORT=3000
 MONGODB_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/gcc_talent?retryWrites=true&w=majority
 JWT_ACCESS_SECRET=your_jwt_access_secret
-JWT_ACCESS_EXPIRES=30m
-JWT_REFRESH_SECRET=your_jwt_refresh_secret
-JWT_REFRESH_EXPIRES=14d
-PLATFORM_FEE_PCT=10
-AUTO_APPROVE_DAYS=7
+JWT_ACCESS_EXPIRES=30d
 CLOUDINARY_CLOUD_NAME=your_cloudinary_name
 CLOUDINARY_API_KEY=your_cloudinary_key
 CLOUDINARY_API_SECRET=your_cloudinary_secret
+EMAIL_USER=your_email_address
+EMAIL_PASS=your_email_password
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+LINKEDIN_CLIENT_ID=your_linkedin_client_id
+LINKEDIN_CLIENT_SECRET=your_linkedin_client_secret
 ```
 
 Seed initial demo data (1 Admin, 10 Clients, 20 Freelancers, categories, and active jobs):
@@ -108,7 +109,9 @@ npm install
 
 Create a `.env` file in the `client/` directory:
 ```env
-VITE_BACK_END_SERVER_URL=http://localhost:5000/api/v1
+VITE_BACK_END_SERVER_URL=http://localhost:3000/api/v1
+VITE_CLOUDINARY_CLOUD_NAME=your_cloud_name_here
+VITE_CLOUDINARY_UPLOAD_PRESET=your_unsigned_preset_name
 ```
 
 Start the Vite development server:
@@ -153,19 +156,3 @@ Run backend integration and unit test suites:
 ```bash
 cd server
 npm test
-```
-
----
-
-## Future Enhancements
-
-* **WebSockets Integration**: Implement Socket.IO for push-delivered messaging and live read-receipt updates without background polling.
-* **Automated Identity Verification**: Integration with regional verification services for freelancer credential badges.
-* **Direct Payment Gateways**: Integrate regional GCC payment providers (e.g., BenefitPay, Tap, Fawry).
-* **Localized Multi-Language Support**: Complete Arabic / English UI internationalization (i18n) with RTL layout toggles.
-
----
-
-## Credits
-
-Special thanks to the instructional team at General Assembly for their continuous mentorship, architectural feedback, and support throughout the development of this platform.
