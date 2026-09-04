@@ -150,7 +150,7 @@ const socialLogin = async function (req, res, next) {
 const linkedinLogin = async function (req, res, next) {
     try {
         const { code } = req.body;
-        const redirectUri = 'http://localhost:5173/linkedin';
+        const redirectUri = `${req.headers.origin || 'https://ga-gcc-talent.vercel.app'}/linkedin`;
 
         const tokenResponse = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
             method: 'POST',
